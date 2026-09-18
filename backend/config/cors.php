@@ -5,26 +5,32 @@ return [
     |--------------------------------------------------------------------------
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'kiosk/*'],
+    'paths' => [
+        'api/*',
+        'sanctum/csrf-cookie',
+        'kiosk/*',
+    ],
 
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    'allowed_methods' => [
+        'GET',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'OPTIONS',
+    ],
 
     'allowed_origins' => [
-        env('APP_URL', 'http://localhost:3000'),
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        env('APP_URL', 'http://127.0.0.1:8000'),
+
         'http://localhost:5173',
         'http://127.0.0.1:5173',
-        'http://192.168.1.3:3000',
-        env('FRONTEND_URL', 'http://localhost:3000'),
-        // Render deployment domains (live services)
+
+        env('FRONTEND_URL', 'http://localhost:5173'),
+
+        // Render deployment domains
         'https://pup-carelink-testing-frontend.onrender.com',
         'https://pup-carelink-testing-backend.onrender.com',
         'https://carelink-frontend.onrender.com',
@@ -32,13 +38,31 @@ return [
     ],
 
     'allowed_origins_patterns' => [
-        // NOTE: these patterns are passed STRAIGHT to preg_match() by
-        // asm89/stack-cors, so they MUST include regex delimiters (#...#).
-        // Allow any local network IP during development
-        '#^http://192\.168\.\d+\.\d+:3000$#i',
-        '#^http://192\.168\.\d+\.\d+:5173$#i',
-        // Allow any *.onrender.com subdomain (Render may append random
-        // suffixes on name collisions; keeps CORS working across URL changes)
+        /*
+        |--------------------------------------------------------------------------
+        | Local / hotspot development
+        |--------------------------------------------------------------------------
+        |
+        | Allows frontend devices connected to common private LAN/hotspot
+        | address ranges.
+        |
+        */
+
+        // 192.168.0.0/16
+        '#^http://192\.168\.\d{1,3}\.\d{1,3}:5173$#i',
+
+        // 10.0.0.0/8
+        '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$#i',
+
+        // 172.16.0.0 - 172.31.255.255
+        '#^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:5173$#i',
+
+        // Optional Vite/older frontend port 3000 support
+        '#^http://192\.168\.\d{1,3}\.\d{1,3}:3000$#i',
+        '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$#i',
+        '#^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:3000$#i',
+
+        // Render
         '#^https://[a-z0-9-]+\.onrender\.com$#i',
     ],
 
@@ -61,8 +85,7 @@ return [
         'Retry-After',
     ],
 
-    'max_age' => 86400, // 24 hours cache for preflight requests
+    'max_age' => 86400,
 
     'supports_credentials' => true,
-
 ];
