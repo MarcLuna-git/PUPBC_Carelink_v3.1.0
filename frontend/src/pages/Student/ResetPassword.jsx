@@ -29,21 +29,18 @@ const ResetPassword = () => {
   const location = useLocation();
 
   const initialEmail =
-    location.state?.email || '';
+    location.state?.email?.trim() || '';
 
-  const initialOtpSent =
-    Boolean(
-      location.state?.otpSent
-    );
+  const initialOtpSent = Boolean(
+    location.state?.otpSent
+  );
 
-  const [form, setForm] =
-    useState({
-      email: initialEmail,
-      otp: '',
-      password: '',
-      password_confirmation:
-        '',
-    });
+  const [form, setForm] = useState({
+    email: initialEmail,
+    otp: '',
+    password: '',
+    password_confirmation: '',
+  });
 
   const [message, setMessage] =
     useState('');
@@ -79,37 +76,60 @@ const ResetPassword = () => {
   ] = useState(false);
 
   // ==========================================
+  // REDIRECT IF EMAIL IS MISSING
+  // ==========================================
+
+  useEffect(() => {
+    if (!initialEmail) {
+      navigate(
+        '/forgot-password',
+        {
+          replace: true,
+        }
+      );
+    }
+  }, [
+    initialEmail,
+    navigate,
+  ]);
+
+  // ==========================================
   // COUNTDOWN
   // ==========================================
 
   useEffect(() => {
     if (otpCooldown <= 0) {
-      return;
+      return undefined;
     }
 
-    const timer = window.setInterval(
-      () => {
-        setOtpCooldown(
-          (current) => {
-            if (current <= 1) {
-              window.clearInterval(
-                timer
+    const timer =
+      window.setInterval(
+        () => {
+          setOtpCooldown(
+            (current) => {
+              if (
+                current <= 1
+              ) {
+                window.clearInterval(
+                  timer
+                );
+
+                return 0;
+              }
+
+              return (
+                current - 1
               );
-
-              return 0;
             }
-
-            return (
-              current - 1
-            );
-          }
-        );
-      },
-      1000
-    );
+          );
+        },
+        1000
+      );
 
     return () =>
-      window.clearInterval(timer);
+      window.clearInterval(
+        timer
+      );
   }, [otpCooldown]);
 
   // ==========================================
@@ -125,18 +145,22 @@ const ResetPassword = () => {
     let nextValue = value;
 
     if (name === 'otp') {
-      nextValue =
-        value
-          .replace(/\D/g, '')
-          .slice(0, 6);
+      nextValue = value
+        .replace(/\D/g, '')
+        .slice(0, 6);
     }
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: nextValue,
-    }));
+    setForm(
+      (previous) => ({
+        ...previous,
+        [name]: nextValue,
+      })
+    );
 
-    if (messageType === 'error') {
+    if (
+      messageType ===
+      'error'
+    ) {
       setMessage('');
       setMessageType('');
     }
@@ -156,28 +180,36 @@ const ResetPassword = () => {
       }
 
       const email =
-        form.email.trim();
+        form.email
+          .trim()
+          .toLowerCase();
 
       if (!email) {
-        setMessageType('error');
+        setMessageType(
+          'error'
+        );
 
         setMessage(
-          'Enter your email address first.'
+          'Email address is required.'
         );
 
         return;
       }
 
-      setResendingOtp(true);
+      setResendingOtp(
+        true
+      );
+
       setMessage('');
       setMessageType('');
 
-      // Old OTP should no longer be used
-      // once resend is requested.
-      setForm((previous) => ({
-        ...previous,
-        otp: '',
-      }));
+      // Any previous OTP is invalid after resend.
+      setForm(
+        (previous) => ({
+          ...previous,
+          otp: '',
+        })
+      );
 
       try {
         const res =
@@ -210,7 +242,14 @@ const ResetPassword = () => {
           );
         }
       } catch (err) {
-        setMessageType('error');
+        console.error(
+          'Password reset OTP resend failed:',
+          err
+        );
+
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           err.response?.data
@@ -218,7 +257,9 @@ const ResetPassword = () => {
             'Failed to resend OTP. Please try again.'
         );
       } finally {
-        setResendingOtp(false);
+        setResendingOtp(
+          false
+        );
       }
     };
 
@@ -230,10 +271,20 @@ const ResetPassword = () => {
     async (e) => {
       e.preventDefault();
 
-      if (
-        !form.email.trim()
-      ) {
-        setMessageType('error');
+      const email =
+        form.email
+          .trim()
+          .toLowerCase();
+
+      const otp =
+        form.otp
+          .replace(/\D/g, '')
+          .trim();
+
+      if (!email) {
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           'Email address is required.'
@@ -244,10 +295,12 @@ const ResetPassword = () => {
 
       if (
         !/^\d{6}$/.test(
-          form.otp
+          otp
         )
       ) {
-        setMessageType('error');
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           'Enter the 6-digit OTP sent to your email.'
@@ -257,9 +310,12 @@ const ResetPassword = () => {
       }
 
       if (
-        form.password.length < 8
+        form.password.length <
+        8
       ) {
-        setMessageType('error');
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           'Password must be at least 8 characters.'
@@ -272,7 +328,9 @@ const ResetPassword = () => {
         form.password !==
         form.password_confirmation
       ) {
-        setMessageType('error');
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           'Passwords do not match.'
@@ -289,8 +347,8 @@ const ResetPassword = () => {
         const res =
           await authService
             .resetPassword(
-              form.email.trim(),
-              form.otp,
+              email,
+              otp,
               form.password,
               form.password_confirmation
             );
@@ -306,27 +364,43 @@ const ResetPassword = () => {
           );
 
           window.setTimeout(
-            () =>
-              navigate('/login'),
+            () => {
+              navigate(
+                '/login',
+                {
+                  replace:
+                    true,
+                }
+              );
+            },
             1500
           );
-        } else {
-          setMessageType(
-            'error'
-          );
 
-          setMessage(
-            res.message ||
-              'Password reset failed.'
-          );
+          return;
         }
+
+        setMessageType(
+          'error'
+        );
+
+        setMessage(
+          res.message ||
+            'Password reset failed.'
+        );
       } catch (err) {
-        setMessageType('error');
+        console.error(
+          'Password reset failed:',
+          err
+        );
+
+        setMessageType(
+          'error'
+        );
 
         setMessage(
           err.response?.data
             ?.message ||
-            'Password reset failed.'
+            'Password reset failed. Please try again.'
         );
       } finally {
         setLoading(false);
@@ -334,14 +408,11 @@ const ResetPassword = () => {
     };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900 flex items-center justify-center px-4 py-8">
-
+    <div className="min-h-screen bg-gradient-to-br from-maroon-950 via-maroon-900 to-maroon-800 flex items-center justify-center px-4 py-8">
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-fadeInUp">
 
         <div className="flex flex-col items-center mb-6">
-
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-800 to-blue-900 rounded-2xl flex items-center justify-center shadow-lg mb-3">
-
+          <div className="w-16 h-16 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-2xl flex items-center justify-center shadow-lg mb-3">
             <Key className="w-9 h-9 text-white" />
           </div>
 
@@ -350,11 +421,7 @@ const ResetPassword = () => {
           </h1>
 
           <p className="text-sm text-gray-500 mt-2 text-center">
-            Enter the
-            verification code
-            sent to your email,
-            then create your
-            new password.
+            Enter the verification code sent to your email, then create your new password.
           </p>
 
           <p className="text-xs text-gray-400 mt-1">
@@ -366,11 +433,11 @@ const ResetPassword = () => {
 
         {message && (
           <div
-            className={`mb-4 p-3 rounded-xl text-sm text-center ${
+            className={`mb-4 p-3 rounded-xl text-sm text-center border ${
               messageType ===
               'success'
-                ? 'bg-green-50 text-green-700'
-                : 'bg-red-50 text-red-700'
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-red-50 text-red-700 border-red-200'
             }`}
           >
             {message}
@@ -391,23 +458,23 @@ const ResetPassword = () => {
             </label>
 
             <div className="relative">
-
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 
               <input
-                className="border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-sm w-full bg-gray-50 text-gray-600 cursor-not-allowed focus:outline-none"
                 type="email"
                 name="email"
                 value={
                   form.email
                 }
-                onChange={
-                  handleChange
-                }
+                readOnly
                 autoComplete="email"
-                required
               />
             </div>
+
+            <p className="text-xs text-gray-400 mt-1">
+              The reset code was sent to this email address.
+            </p>
           </div>
 
           {/* OTP */}
@@ -417,7 +484,7 @@ const ResetPassword = () => {
             </label>
 
             <input
-              className="border border-gray-300 rounded-xl px-4 py-3 text-lg font-semibold w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-[0.4em]"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-lg font-semibold w-full focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:border-maroon-500 text-center tracking-[0.4em]"
               type="text"
               name="otp"
               value={
@@ -427,19 +494,23 @@ const ResetPassword = () => {
                 handleChange
               }
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={6}
               placeholder="000000"
+              autoComplete="one-time-code"
               required
             />
 
             <div className="mt-2 text-center">
-
               {otpCooldown >
               0 ? (
                 <p className="text-xs text-gray-500">
                   Resend code in{' '}
                   <strong>
-                    {otpCooldown}s
+                    {
+                      otpCooldown
+                    }
+                    s
                   </strong>
                 </p>
               ) : (
@@ -451,7 +522,7 @@ const ResetPassword = () => {
                   disabled={
                     resendingOtp
                   }
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-maroon-800 hover:text-maroon-900 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {resendingOtp ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -474,9 +545,8 @@ const ResetPassword = () => {
             </label>
 
             <div className="relative">
-
               <input
-                className="border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm w-full focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:border-maroon-500"
                 type={
                   showPassword
                     ? 'text'
@@ -489,6 +559,7 @@ const ResetPassword = () => {
                 onChange={
                   handleChange
                 }
+                placeholder="Enter new password"
                 autoComplete="new-password"
                 required
               />
@@ -497,10 +568,18 @@ const ResetPassword = () => {
                 type="button"
                 onClick={() =>
                   setShowPassword(
-                    !showPassword
+                    (
+                      current
+                    ) =>
+                      !current
                   )
                 }
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                aria-label={
+                  showPassword
+                    ? 'Hide password'
+                    : 'Show password'
+                }
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -518,9 +597,8 @@ const ResetPassword = () => {
             </label>
 
             <div className="relative">
-
               <input
-                className="border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm w-full focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:border-maroon-500"
                 type={
                   showConfirmPassword
                     ? 'text'
@@ -533,6 +611,7 @@ const ResetPassword = () => {
                 onChange={
                   handleChange
                 }
+                placeholder="Confirm new password"
                 autoComplete="new-password"
                 required
               />
@@ -541,10 +620,18 @@ const ResetPassword = () => {
                 type="button"
                 onClick={() =>
                   setShowConfirmPassword(
-                    !showConfirmPassword
+                    (
+                      current
+                    ) =>
+                      !current
                   )
                 }
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                aria-label={
+                  showConfirmPassword
+                    ? 'Hide confirmation password'
+                    : 'Show confirmation password'
+                }
               >
                 {showConfirmPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -564,7 +651,7 @@ const ResetPassword = () => {
             )}
 
           <button
-            className="w-full py-3 bg-gradient-to-r from-blue-800 to-blue-900 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-lg transition"
+            className="w-full py-3 bg-gradient-to-r from-maroon-800 to-maroon-900 hover:from-maroon-900 hover:to-maroon-950 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
             type="submit"
             disabled={
               loading ||
@@ -586,10 +673,9 @@ const ResetPassword = () => {
         </form>
 
         <div className="mt-6 text-center">
-
           <Link
             to="/login"
-            className="text-sm text-gray-500 hover:underline inline-flex items-center space-x-1"
+            className="text-sm text-gray-500 hover:text-maroon-800 hover:underline inline-flex items-center space-x-1"
           >
             <ArrowLeft className="w-4 h-4" />
 

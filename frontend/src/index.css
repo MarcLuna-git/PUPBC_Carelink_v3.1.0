@@ -16,6 +16,18 @@
   --color-maroon-950: #4d0000;
 }
 
+.recovery-auth-background {
+  background-color: var(--color-maroon-950);
+  background-image:
+    linear-gradient(to bottom right,
+      color-mix(in srgb, var(--color-maroon-900) 78%, transparent),
+      color-mix(in srgb, var(--color-maroon-800) 72%, transparent),
+      color-mix(in srgb, var(--color-maroon-950) 78%, transparent)),
+    url('./assets/pupbg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25% { transform: translate(20px, -50px) scale(1.1); }

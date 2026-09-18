@@ -95,15 +95,15 @@ const ForgotPassword = () => {
     };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900 flex items-center justify-center px-4">
+    <div className="min-h-screen recovery-auth-background flex items-center justify-center px-4 py-8">
 
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-fadeInUp">
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl p-6 sm:p-8 w-full max-w-md animate-fadeInUp">
 
         <div className="flex flex-col items-center mb-6">
 
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-800 to-blue-900 rounded-2xl flex items-center justify-center shadow-lg mb-3">
+          <div className="w-16 h-16 bg-maroon-800 rounded-2xl flex items-center justify-center shadow-lg mb-3">
 
-            <Mail className="w-9 h-9 text-white" />
+            <Mail className="w-9 h-9 text-yellow-400" />
           </div>
 
           <h1 className="text-2xl font-bold text-gray-800">
@@ -150,7 +150,7 @@ const ForgotPassword = () => {
             </label>
 
             <input
-              className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full focus:outline-none focus:ring-2 focus:ring-maroon-500"
               type="email"
               value={email}
               onChange={(e) =>
@@ -165,7 +165,7 @@ const ForgotPassword = () => {
           </div>
 
           <button
-            className="w-full py-3 bg-gradient-to-r from-blue-800 to-blue-900 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-lg transition"
+            className="w-full py-3 bg-maroon-800 hover:bg-maroon-900 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-lg transition"
             type="submit"
             disabled={loading}
           >
@@ -187,7 +187,7 @@ const ForgotPassword = () => {
 
           <Link
             to="/login"
-            className="text-sm text-gray-500 hover:underline inline-flex items-center space-x-1"
+            className="text-sm text-maroon-800 hover:text-maroon-900 hover:underline inline-flex items-center space-x-1"
           >
             <ArrowLeft className="w-4 h-4" />
 

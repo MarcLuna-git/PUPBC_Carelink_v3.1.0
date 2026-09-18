@@ -24,6 +24,16 @@ class StudentController extends Controller
             $query->whereHas('studentProfile', fn($q) => $q->where('course', $request->course));
         }
 
+        foreach (['year', 'section'] as $field) {
+            if ($request->filled($field)) {
+                $query->whereHas('studentProfile', fn($q) => $q->where($field, $request->input($field)));
+            }
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
         $students = $query->orderBy('last_name')->paginate(20);
 
         return response()->json(['success' => true, 'data' => $students]);

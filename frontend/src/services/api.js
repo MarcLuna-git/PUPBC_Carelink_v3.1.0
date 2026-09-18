@@ -5,17 +5,17 @@ const getApiUrl = () => {
     ?.trim()
     .replace(/\/+$/, '');
 
-  // Local development / demo
-  if (import.meta.env.DEV) {
-    const host = window.location.hostname;
-
-    // Automatically follows whatever IP/hostname
-    // was used to open the frontend.
-    return `http://${host}:8000/api`;
+  // Always use explicitly configured API URL first.
+  if (configuredUrl) {
+    return configuredUrl;
   }
 
-  // Production only
-  return configuredUrl || '/api';
+  // Safe local development fallback.
+  if (import.meta.env.DEV) {
+    return 'http://127.0.0.1:8000/api';
+  }
+
+  return '/api';
 };
 
 const api = axios.create({

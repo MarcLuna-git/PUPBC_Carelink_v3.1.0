@@ -600,7 +600,7 @@ const Appointments = () => {
                   {selectedAppointment.status === 'pending' && (
                     <>
                       <button onClick={() => handleEditClick(selectedAppointment)} 
-                        className="w-full py-3 bg-blue-500 text-white font-semibold rounded-2xl hover:bg-blue-600 transition flex items-center justify-center gap-1.5 text-sm">
+                        className="w-full py-3 bg-maroon-800 text-white font-semibold rounded-2xl hover:bg-maroon-900 transition flex items-center justify-center gap-1.5 text-sm">
                         <Edit3 className="w-4 h-4" />Edit Appointment
                       </button>
                       <button onClick={() => { setConfirmCancel(selectedAppointment.id); setSelectedAppointment(null); }} 

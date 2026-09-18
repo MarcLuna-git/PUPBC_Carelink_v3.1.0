@@ -76,7 +76,7 @@ const AdminLayout = ({ children }) => {
         <aside className={`w-64 flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 shadow-2xl transition-all duration-300 ${
           darkMode 
             ? 'bg-gradient-to-b from-gray-900 to-gray-950 shadow-black/30' 
-            : 'bg-gradient-to-b from-[#7A0019] to-[#5C0013] shadow-maroon-900/30'
+            : 'bg-gradient-to-b from-maroon-800 to-maroon-900 shadow-maroon-900/30'
         }`}>
           
           <div className={`h-16 flex items-center px-5 border-b transition-colors ${
@@ -176,7 +176,7 @@ const AdminLayout = ({ children }) => {
       <aside className={`fixed lg:hidden inset-y-0 left-0 z-50 w-64 flex flex-col min-h-screen transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${
         darkMode 
           ? 'bg-gradient-to-b from-gray-900 to-gray-950' 
-          : 'bg-gradient-to-b from-[#7A0019] to-[#5C0013]'
+          : 'bg-gradient-to-b from-maroon-800 to-maroon-900'
       }`}>
         <div className={`h-16 flex items-center justify-between px-5 border-b ${darkMode ? 'border-white/5' : 'border-white/10'}`}>
           <span className={`font-bold ${darkMode ? 'text-white/90' : 'text-white'}`}>CareLink</span>
