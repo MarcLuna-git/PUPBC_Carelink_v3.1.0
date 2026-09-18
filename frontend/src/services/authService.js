@@ -1,103 +1,239 @@
 import api from './api';
 
+const getPayload = (responseData) => {
+  // Supports both:
+  // { success, data: { token, user } }
+  // and
+  // { success, token, user }
+  return responseData?.data ?? responseData;
+};
+
 const authService = {
-  // Nurse login (the backend URL is retained for compatibility).
+  // ==========================================
+  // NURSE LOGIN
+  // ==========================================
+
   async nurseLogin(email, password) {
-    const response = await api.post('/auth/admin-login', { email, password });
-    if (response.data.success) {
-      localStorage.setItem('token', response.data.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+    // Keep legacy backend URL for compatibility.
+    const response = await api.post('/auth/admin-login', {
+      email,
+      password,
+    });
+
+    const body = response.data;
+    const payload = getPayload(body);
+
+    if (body.success && payload?.token) {
+      localStorage.setItem('token', payload.token);
+
+      if (payload.user) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(payload.user)
+        );
+      }
     }
-    return response.data;
+
+    return body;
   },
 
-  // Student Login
+  // ==========================================
+  // STUDENT LOGIN
+  // ==========================================
+
   async login(student_id, password, birthday) {
-    const response = await api.post('/auth/login', { student_id, password, birthday });
-    if (response.data.success) {
-      localStorage.setItem('token', response.data.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+    const response = await api.post('/auth/login', {
+      student_id,
+      password,
+      birthday,
+    });
+
+    const body = response.data;
+    const payload = getPayload(body);
+
+    if (body.success && payload?.token) {
+      localStorage.setItem('token', payload.token);
+
+      if (payload.user) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(payload.user)
+        );
+      }
     }
-    return response.data;
+
+    return body;
   },
 
-  // Register
+  // ==========================================
+  // REGISTRATION
+  // ==========================================
+
   async register(data) {
-    const response = await api.post('/auth/register', data);
+    const response = await api.post(
+      '/auth/register',
+      data
+    );
+
     return response.data;
   },
 
   async verifyRegistration(email, otp) {
-    const response = await api.post('/auth/register/verify', { email, otp });
+    const response = await api.post(
+      '/auth/register/verify',
+      {
+        email,
+        otp,
+      }
+    );
+
     return response.data;
   },
 
-  // Logout
+  async resendRegistrationOtp(email) {
+    const response = await api.post(
+      '/auth/register/resend-otp',
+      {
+        email,
+      }
+    );
+
+    return response.data;
+  },
+
+  // ==========================================
+  // PASSWORD RECOVERY
+  // ==========================================
+
+  async forgotPassword(email) {
+    const response = await api.post(
+      '/auth/forgot-password',
+      {
+        email,
+      }
+    );
+
+    return response.data;
+  },
+
+  // Reuses forgot-password endpoint.
+  // Backend invalidates the old OTP and creates a new one.
+  async resendPasswordResetOtp(email) {
+    const response = await api.post(
+      '/auth/forgot-password',
+      {
+        email,
+      }
+    );
+
+    return response.data;
+  },
+
+  async resetPassword(
+    email,
+    otp,
+    password,
+    password_confirmation
+  ) {
+    const response = await api.post(
+      '/auth/reset-password',
+      {
+        email,
+        otp,
+        password,
+        password_confirmation,
+      }
+    );
+
+    return response.data;
+  },
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
+
   async logout() {
     try {
       await api.post('/auth/logout');
     } catch (e) {
-      // ignore token invalidation errors
+      // Clear local session even if token is already invalid.
     }
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    Object.keys(localStorage).filter(key => key.startsWith('carelink.student.')).forEach(key => localStorage.removeItem(key));
+
+    Object.keys(localStorage)
+      .filter((key) =>
+        key.startsWith('carelink.student.')
+      )
+      .forEach((key) =>
+        localStorage.removeItem(key)
+      );
   },
 
-  // Get current user from localStorage
+  // ==========================================
+  // LOCAL AUTH HELPERS
+  // ==========================================
+
   getCurrentUser() {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+
+    if (!user) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(user);
+    } catch {
+      return null;
+    }
   },
 
-  // Check if user is authenticated
   isAuthenticated() {
     return !!localStorage.getItem('token');
   },
 
-  // Check if current user is nurse
   isNurse() {
     const user = this.getCurrentUser();
-    return user && user.role === 'nurse';
+
+    return user?.role === 'nurse';
   },
 
-  // Check if current user is student
   isStudent() {
     const user = this.getCurrentUser();
-    return user && user.role === 'student';
+
+    return user?.role === 'student';
   },
 
-  // Get token
   getToken() {
     return localStorage.getItem('token');
   },
 
-  // Forgot password
-  async forgotPassword(email) {
-    const response = await api.post('/auth/forgot-password', { email });
-    return response.data;
-  },
+  // ==========================================
+  // JWT
+  // ==========================================
 
-  // Reset password
-  async resetPassword(email, otp, password, password_confirmation) {
-    const response = await api.post('/auth/reset-password', {
-      email, otp, password, password_confirmation
-    });
-    return response.data;
-  },
-
-  // Refresh token
   async refreshToken() {
-    const response = await api.post('/auth/refresh');
-    if (response.data.success) {
-      localStorage.setItem('token', response.data.data.token);
+    const response = await api.post(
+      '/auth/refresh'
+    );
+
+    const body = response.data;
+    const payload = getPayload(body);
+
+    if (body.success && payload?.token) {
+      localStorage.setItem(
+        'token',
+        payload.token
+      );
     }
-    return response.data;
+
+    return body;
   },
 
-  // Get authenticated user from server
   async getMe() {
     const response = await api.get('/auth/me');
+
     return response.data;
   },
 };

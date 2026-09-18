@@ -8,22 +8,38 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository implements UserRepositoryInterface
 {
+    /**
+     * Create a user.
+     *
+     * If the caller provides a status, preserve it.
+     * Otherwise default to pending.
+     */
     public function create(array $data): User
     {
-        $user = User::create(array_merge($data, [
-            'status' => 'pending',
-        ]));
+        $data['status'] = $data['status'] ?? 'pending';
 
-        // Create associated profile WITH DATA
-        $user->profile()->create([
-            'user_id' => $user->id,
-            'course' => $data['course'] ?? null,
-            'year' => $data['year'] ?? null,
-            'section' => $data['section'] ?? null,
-            'birthday' => $data['birthday'] ?? null,
-            'gender' => $data['gender'] ?? null,
-            'mobile_number' => $data['mobile_number'] ?? null,
-        ]);
+        $user = User::create($data);
+
+        /*
+         * Keep the Student Profile synchronized with
+         * the registration information.
+         *
+         * updateOrCreate is used so we do not accidentally
+         * create duplicate profile rows.
+         */
+        $user->profile()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+            ],
+            [
+                'course' => $data['course'] ?? null,
+                'year' => $data['year'] ?? null,
+                'section' => $data['section'] ?? null,
+                'birthday' => $data['birthday'] ?? null,
+                'gender' => $data['gender'] ?? null,
+                'mobile_number' => $data['mobile_number'] ?? null,
+            ]
+        );
 
         return $user;
     }
@@ -50,7 +66,9 @@ class UserRepository implements UserRepositoryInterface
 
     public function updateStatus(User $user, string $status): bool
     {
-        return $user->update(['status' => $status]);
+        return $user->update([
+            'status' => $status,
+        ]);
     }
 
     public function recordLogin(User $user, string $ip): bool
@@ -71,11 +89,16 @@ class UserRepository implements UserRepositoryInterface
 
     public function getActiveStudents(): Collection
     {
-        return User::active()->verified()->get();
+        return User::active()
+            ->verified()
+            ->get();
     }
 
     public function getPendingStudents(): Collection
     {
-        return User::where('status', 'pending')->get();
+        return User::where(
+            'status',
+            'pending'
+        )->get();
     }
 }
