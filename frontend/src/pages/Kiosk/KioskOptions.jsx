@@ -32,7 +32,6 @@ const KioskOptions = ({ onScanQR, onEnterID, onBack }) => {
     <KioskLayout>
       <div className="w-full max-w-4xl mx-auto text-center">
         
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -54,7 +53,6 @@ const KioskOptions = ({ onScanQR, onEnterID, onBack }) => {
           </div>
         </motion.div>
 
-        {/* Options Grid */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,22 +70,17 @@ const KioskOptions = ({ onScanQR, onEnterID, onBack }) => {
               onClick={option.onClick}
               className={`relative bg-white/[0.03] backdrop-blur-xl rounded-3xl p-6 md:p-8 border ${option.color} hover:bg-white/[0.06] transition-all duration-500 text-left group overflow-hidden`}
             >
-              {/* Hover glow */}
               <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${option.color}`} />
               
               <div className="relative z-10 flex flex-col items-center text-center h-full">
-                {/* Icon */}
                 <div className={`w-16 h-16 md:w-20 md:h-20 ${option.iconBg} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <option.icon className={`w-8 h-8 md:w-10 md:h-10 ${option.iconColor}`} />
                 </div>
                 
-                {/* Title */}
                 <h3 className="text-lg md:text-xl font-bold text-white mb-2">{option.title}</h3>
                 
-                {/* Description */}
                 <p className="text-white/35 text-sm leading-relaxed flex-1">{option.desc}</p>
                 
-                {/* Badge */}
                 <span className={`inline-block mt-4 text-xs font-semibold ${option.iconColor} ${option.iconBg} px-3 py-1 rounded-full`}>
                   {option.badge}
                 </span>

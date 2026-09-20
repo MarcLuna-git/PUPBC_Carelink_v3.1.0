@@ -12,7 +12,6 @@ class MedicineController extends Controller
     {
         $query = Medicine::query();
 
-        // Search
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
@@ -21,24 +20,20 @@ class MedicineController extends Controller
             });
         }
 
-        // Filter by category
         if ($request->category) {
             $query->where('category', $request->category);
         }
 
-        // Filter low stock
         if ($request->low_stock) {
             $query->lowStock();
         }
 
-        // Filter expiring soon
         if ($request->expiring_soon) {
             $query->expiringSoon();
         }
 
         $medicines = $query->orderBy('name')->paginate(20);
 
-        // Add computed fields
         $medicines->getCollection()->transform(function ($medicine) {
             $medicine->is_low_stock = $medicine->quantity <= $medicine->minimum_stock;
             $medicine->is_expiring_soon = $medicine->expiry_date && $medicine->expiry_date <= now()->addMonths(3);

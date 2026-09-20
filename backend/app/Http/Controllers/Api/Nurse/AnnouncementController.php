@@ -19,7 +19,7 @@ class AnnouncementController extends Controller
     private function visible(Request $request)
     {
         $query = Announcement::query();
-        if ($request->is('api/nurse/*')) return $query; // Nurse middleware protects management routes.
+        if ($request->is('api/nurse/*')) return $query;
         return $query->where('is_published', true)->whereIn('target_audience', ['all', 'students'])
             ->where(function ($q) { $q->whereNull('published_at')->orWhere('published_at', '<=', now()); });
     }

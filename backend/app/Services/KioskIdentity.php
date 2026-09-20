@@ -23,7 +23,7 @@ class KioskIdentity
                 $q->where('qr_code_hash', $hash)->where('is_active', true)
                     ->where(function ($q) { $q->whereNull('expires_at')->orWhere('expires_at', '>', now()); });
             });
-            // A raw hash scan has no embedded Student ID; JSON scans must match both.
+            // Walang student ID ang raw hash; sa JSON scan, dapat tugma ang ID at hash.
             if ($id !== $hash) $query->where('student_id', $id);
         } else {
             $query->where('student_id', $id);

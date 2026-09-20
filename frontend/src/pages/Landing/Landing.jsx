@@ -74,9 +74,6 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
 
-      {/* ============================================ */}
-      {/* NAVBAR                                        */}
-      {/* ============================================ */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
           ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-gray-100 dark:border-gray-800'
@@ -132,14 +129,10 @@ const Landing = () => {
         </AnimatePresence>
       </nav>
 
-      {/* ============================================ */}
-      {/* HERO — signature: an ECG/pulse line tracing through the headline */}
-      {/* ============================================ */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <img src={pupbg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/78 via-maroon-800/72 to-maroon-950/78"></div>
 
-        {/* Signature pulse-line, drawn once on load, faint and ambient afterward */}
         <svg className="absolute inset-x-0 top-1/2 -translate-y-1/2 w-full h-40 opacity-20" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
           <motion.path
             d="M0,80 L280,80 L320,80 L345,20 L370,140 L395,80 L440,80 L470,50 L500,110 L530,80 L1200,80"
@@ -211,9 +204,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* FEATURES                                      */}
-      {/* ============================================ */}
       <section id="features" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
@@ -238,9 +228,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* HOW IT WORKS                                 */}
-      {/* ============================================ */}
       <section id="how-it-works" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-4xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
@@ -268,9 +255,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* WHY CHOOSE CARELINK                          */}
-      {/* ============================================ */}
       <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
@@ -294,9 +278,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* TESTIMONIALS                                 */}
-      {/* ============================================ */}
       <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
@@ -323,9 +304,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* FAQ                                          */}
-      {/* ============================================ */}
       <section id="faq" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
         <div className="max-w-3xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
@@ -354,9 +332,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* CTA BANNER                                   */}
-      {/* ============================================ */}
       <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-maroon-900 via-maroon-800 to-maroon-950 relative overflow-hidden">
         <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-500/10 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-10 right-10 w-72 h-72 bg-maroon-500/10 rounded-full blur-[100px]"></div>
@@ -378,9 +353,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* FOOTER                                       */}
-      {/* ============================================ */}
       <footer className="bg-gray-950 py-16 lg:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           <div className="sm:col-span-2 lg:col-span-1">

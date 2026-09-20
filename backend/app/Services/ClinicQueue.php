@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class ClinicQueue
 {
-    // Always call within a transaction, before locking appointments/check-ins.
+    // Tawagin sa transaction bago i-lock ang appointments/check-ins.
     public static function lock(): void
     {
         if (!DB::table('clinic_queue_locks')->where('id', 1)->lockForUpdate()->first()) {
@@ -31,7 +31,7 @@ class ClinicQueue
         $query = DB::table('clinic_queue_counters')->where('queue_date', $day)->where('queue_type', $type);
         $counter = $query->first();
         $last = $counter ? $counter->last_number : 0;
-        // Include historical allocations; never renumber existing visits.
+        // Isama ang historical allocations; huwag palitan ang existing queue numbers.
         foreach (AppointmentCheckin::whereDate('created_at', $day)->where('queue_type', $type)->pluck('queue_number') as $number) {
             if (preg_match('/^[PR]-(\d+)$/', (string) $number, $match)) $last = max($last, (int) $match[1]);
         }

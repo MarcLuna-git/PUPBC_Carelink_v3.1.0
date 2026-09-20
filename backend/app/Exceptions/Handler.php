@@ -8,35 +8,21 @@ use Throwable;
 
 class Handler extends ExceptionHandler
 {
-    /**
-     * A list of the exception types that are not reported.
-     *
-     * @var array<int, class-string<Throwable>>
-     */
+    /** @var array<int, class-string<Throwable>> */
     protected $dontReport = [
-        //
     ];
 
-    /**
-     * A list of the inputs that are never flashed for validation exceptions.
-     *
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     protected $dontFlash = [
         'current_password',
         'password',
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     *
-     * @return void
-     */
+    /** @return void */
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            // Log all errors with context
             Log::channel('daily')->error($e->getMessage(), [
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
@@ -59,7 +45,6 @@ class Handler extends ExceptionHandler
             ]);
         });
 
-        // Custom handling for specific exceptions
         $this->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
             return response()->json([
                 'success' => false,
@@ -97,9 +82,6 @@ class Handler extends ExceptionHandler
         });
     }
 
-    /**
-     * Sanitize input data for logging (remove sensitive fields)
-     */
     private function sanitizeInput(array $input): array
     {
         $sensitiveFields = ['password', 'password_confirmation', 'token', 'secret', 'api_key'];

@@ -75,9 +75,6 @@ const ResetPassword = () => {
     setShowConfirmPassword,
   ] = useState(false);
 
-  // ==========================================
-  // REDIRECT IF EMAIL IS MISSING
-  // ==========================================
 
   useEffect(() => {
     if (!initialEmail) {
@@ -93,9 +90,6 @@ const ResetPassword = () => {
     navigate,
   ]);
 
-  // ==========================================
-  // COUNTDOWN
-  // ==========================================
 
   useEffect(() => {
     if (otpCooldown <= 0) {
@@ -132,9 +126,6 @@ const ResetPassword = () => {
       );
   }, [otpCooldown]);
 
-  // ==========================================
-  // CHANGE
-  // ==========================================
 
   const handleChange = (e) => {
     const {
@@ -166,9 +157,6 @@ const ResetPassword = () => {
     }
   };
 
-  // ==========================================
-  // RESEND OTP
-  // ==========================================
 
   const handleResendOtp =
     async () => {
@@ -203,7 +191,7 @@ const ResetPassword = () => {
       setMessage('');
       setMessageType('');
 
-      // Any previous OTP is invalid after resend.
+      // Invalid na ang dating OTP pagkatapos ng resend.
       setForm(
         (previous) => ({
           ...previous,
@@ -263,9 +251,6 @@ const ResetPassword = () => {
       }
     };
 
-  // ==========================================
-  // RESET PASSWORD
-  // ==========================================
 
   const handleSubmit =
     async (e) => {
@@ -451,7 +436,6 @@ const ResetPassword = () => {
           className="space-y-4"
         >
 
-          {/* EMAIL */}
           <div>
             <label className="font-semibold text-sm text-gray-700 pb-1 block">
               Email
@@ -477,7 +461,6 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          {/* OTP */}
           <div>
             <label className="font-semibold text-sm text-gray-700 pb-1 block">
               OTP Code
@@ -538,7 +521,6 @@ const ResetPassword = () => {
             </div>
           </div>
 
-          {/* PASSWORD */}
           <div>
             <label className="font-semibold text-sm text-gray-700 pb-1 block">
               New Password
@@ -590,7 +572,6 @@ const ResetPassword = () => {
             </div>
           </div>
 
-          {/* CONFIRM PASSWORD */}
           <div>
             <label className="font-semibold text-sm text-gray-700 pb-1 block">
               Confirm Password

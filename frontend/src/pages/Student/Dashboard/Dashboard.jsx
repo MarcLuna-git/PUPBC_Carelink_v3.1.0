@@ -119,19 +119,17 @@ const Dashboard = () => {
     fetchNotifications(); 
   }, [fetchDashboardData, fetchAnnouncements, fetchNotifications]);
 
-  // Initial load + polling every 60 seconds
   useEffect(() => {
     refreshAll();
     const handleFocus = () => refreshAll();
     window.addEventListener('focus', handleFocus);
-    const interval = setInterval(refreshAll, 60000); // Changed to 60 seconds
+    const interval = setInterval(refreshAll, 60000);
     return () => { 
       window.removeEventListener('focus', handleFocus); 
       clearInterval(interval); 
     };
   }, [refreshAll]);
 
-  // Listen for health profile updates
   useEffect(() => {
     const handleHealthUpdate = () => {
       fetchDashboardData();
@@ -171,7 +169,6 @@ const Dashboard = () => {
     { icon: User, label: 'My Profile', path: '/student/profile', color: 'from-orange-500 to-orange-600' },
   ];
 
-  // ==================== SKELETON LOADING ====================
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-5">
@@ -235,11 +232,9 @@ const Dashboard = () => {
     );
   }
 
-  // ==================== ACTUAL CONTENT ====================
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-5 pb-6">
       
-      {/* Welcome Card */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-maroon-800 to-maroon-900 dark:from-maroon-900 dark:to-maroon-950 rounded-3xl p-5 lg:p-6 text-white shadow-xl shadow-maroon-800/20">
         <div className="flex items-center justify-between">
@@ -270,7 +265,6 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Health Profile Warning */}
       {!healthProfileDone && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
           className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-3xl p-4 flex items-center justify-between">
@@ -287,7 +281,6 @@ const Dashboard = () => {
         </motion.div>
       )}
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summaryCards.map((card, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}

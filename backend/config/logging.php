@@ -6,27 +6,11 @@ use Monolog\Handler\SyslogUdpHandler;
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Log Channel
-    |--------------------------------------------------------------------------
-    */
-
     'default' => env('LOG_CHANNEL', 'stack'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Deprecations Log Channel
-    |--------------------------------------------------------------------------
-    */
 
     'deprecations' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Log Channels
-    |--------------------------------------------------------------------------
-    */
 
     'channels' => [
         'stack' => [
@@ -41,7 +25,6 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
-        // Daily error logs - separate file per day, kept for 30 days
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
@@ -50,7 +33,6 @@ return [
             'permission' => 0664,
         ],
 
-        // API-specific logs
         'api' => [
             'driver' => 'daily',
             'path' => storage_path('logs/api.log'),
@@ -58,7 +40,6 @@ return [
             'days' => 14,
         ],
 
-        // Authentication logs
         'auth' => [
             'driver' => 'daily',
             'path' => storage_path('logs/auth.log'),
@@ -66,7 +47,6 @@ return [
             'days' => 30,
         ],
 
-        // Kiosk activity logs
         'kiosk' => [
             'driver' => 'daily',
             'path' => storage_path('logs/kiosk.log'),

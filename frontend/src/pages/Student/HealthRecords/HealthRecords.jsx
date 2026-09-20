@@ -123,7 +123,6 @@ const HealthRecords = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-6">
       
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Health Records</h1>
@@ -132,7 +131,6 @@ const HealthRecords = () => {
           </p>
         </div>
         
-        {/* Search + Filter */}
         <div className="flex gap-2">
           <div className="relative flex-1 sm:flex-none sm:w-64">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -152,14 +150,12 @@ const HealthRecords = () => {
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="mb-5 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-2xl text-sm text-center border border-red-200 dark:border-red-800/20">
           {error}
         </div>
       )}
 
-      {/* Filters */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -192,7 +188,6 @@ const HealthRecords = () => {
         )}
       </AnimatePresence>
 
-      {/* Records List */}
       {filteredRecords.length === 0 ? (
         <div className="text-center py-16">
           <ClipboardList className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -207,7 +202,6 @@ const HealthRecords = () => {
             <motion.div key={record.id} layout
               className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 overflow-hidden hover:shadow-md hover:border-gray-200 dark:hover:border-gray-600 transition-all">
               
-              {/* Record Header */}
               <button
                 onClick={() => setExpandedId(expandedId === record.id ? null : record.id)}
                 className="w-full p-4 sm:p-5 flex items-start justify-between text-left gap-3">
@@ -251,7 +245,6 @@ const HealthRecords = () => {
                 </div>
               </button>
 
-              {/* Expanded Details */}
               <AnimatePresence>
                 {expandedId === record.id && (
                   <motion.div
@@ -262,7 +255,6 @@ const HealthRecords = () => {
                     className="overflow-hidden">
                     <div className="px-4 sm:px-5 pb-5 border-t border-gray-100 dark:border-gray-700/50 pt-4">
                       
-                      {/* Vital Signs */}
                       {Object.values(record.vitals).some(v => v) && (
                         <div className="mb-4">
                           <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
@@ -298,7 +290,6 @@ const HealthRecords = () => {
                         </div>
                       )}
 
-                      {/* Details Grid */}
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5">
                           <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -334,7 +325,6 @@ const HealthRecords = () => {
                         </div>
                       </div>
 
-                      {/* Notes */}
                       {record.notes && (
                         <div className="mt-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-3.5 border border-yellow-100 dark:border-yellow-800/20">
                           <p className="text-[11px] text-yellow-600 dark:text-yellow-500 uppercase tracking-wider mb-1">Notes</p>
@@ -342,7 +332,6 @@ const HealthRecords = () => {
                         </div>
                       )}
 
-                      {/* Download Button */}
                       <button className="mt-4 w-full py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2">
                         <Download className="w-4 h-4" />
                         Download Record

@@ -20,9 +20,6 @@ class AppointmentController extends Controller
         return response()->json(['success' => true, 'data' => $appointments]);
     }
 
-    /**
-     * Get available slots for a specific date
-     */
     public function availableSlots(Request $request)
     {
         $request->validate([
@@ -40,9 +37,6 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Check if user already has an appointment on a date
-     */
     public function checkDuplicate(Request $request)
     {
         $request->validate([
@@ -75,7 +69,6 @@ class AppointmentController extends Controller
 
         $this->ensureFutureSlot($request->appointment_date, $request->time_slot);
 
-        // Check for duplicate appointment on same date
         $existingOnDate = Appointment::where('user_id', auth()->id())
             ->whereDate('appointment_date', $request->appointment_date)
             ->whereIn('status', ['pending', 'approved'])
@@ -88,7 +81,6 @@ class AppointmentController extends Controller
             ], 422);
         }
 
-        // Check slot availability (max 10 per 30-min slot)
         if (!AppointmentSlot::isSlotAvailable($request->appointment_date, $request->time_slot)) {
             return response()->json([
                 'success' => false,

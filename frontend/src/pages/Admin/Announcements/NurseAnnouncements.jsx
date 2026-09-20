@@ -126,7 +126,6 @@ const NurseAnnouncements = () => {
         <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-2xl text-sm text-center">{message}</div>
       )}
 
-      {/* Create/Edit Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -171,14 +170,12 @@ const NurseAnnouncements = () => {
         )}
       </AnimatePresence>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input className="w-full border rounded-2xl pl-10 pr-4 py-2.5 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
           value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search announcements..." />
       </div>
 
-      {/* List */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">

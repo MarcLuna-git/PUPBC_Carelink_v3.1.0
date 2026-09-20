@@ -105,7 +105,6 @@ const Announcements = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // ==================== SKELETON LOADING ====================
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-5">
@@ -150,7 +149,6 @@ const Announcements = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-5 pb-6">
       
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Announcements</h1>
@@ -166,14 +164,12 @@ const Announcements = () => {
         </button>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-2xl text-sm text-center border border-red-200 dark:border-red-800/20">
           {error}
         </div>
       )}
 
-      {/* Search + Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -189,7 +185,6 @@ const Announcements = () => {
         </select>
       </div>
 
-      {/* Category Tabs */}
       <div className="flex flex-wrap gap-2 overflow-x-auto pb-1">
         {categories.map(cat => (
           <button key={cat} onClick={() => setFilterCategory(cat)}
@@ -203,7 +198,6 @@ const Announcements = () => {
         ))}
       </div>
 
-      {/* Announcements List */}
       <div className="space-y-3">
         {filteredAnnouncements.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 py-12 text-center">

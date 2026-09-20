@@ -46,8 +46,7 @@ const NurseAppointments = () => {
     fetchAppointments(); 
   }, [filter, fetchAppointments]);
 
-  // Keep the admin list current while the page is open. Visibility checking
-  // prevents background tabs from creating unnecessary requests.
+  // Mag-poll lang habang visible ang page para iwas background requests.
   useEffect(() => {
     const refresh = () => fetchAppointments();
     const interval = setInterval(refresh, 5000);
@@ -138,7 +137,6 @@ const NurseAppointments = () => {
     rejected: { icon: XCircle, color: 'text-red-500' },
   };
 
-  // Count per status
   const counts = {
     all: appointments.length,
     pending: appointments.filter(a => a.status === 'pending').length,
@@ -149,7 +147,6 @@ const NurseAppointments = () => {
   return (
     <div className="space-y-5 max-w-6xl mx-auto px-4 sm:px-0 pb-6">
       
-      {/* Header */}
       <div>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -170,7 +167,6 @@ const NurseAppointments = () => {
         </div>
       </div>
 
-      {/* Message */}
       <AnimatePresence>
         {message && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
@@ -182,7 +178,6 @@ const NurseAppointments = () => {
         )}
       </AnimatePresence>
 
-      {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -213,7 +208,6 @@ const NurseAppointments = () => {
         </div>
       </div>
 
-      {/* Appointments List */}
       {loading ? (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
@@ -297,7 +291,6 @@ const NurseAppointments = () => {
         </div>
       )}
 
-      {/* Detail Modal */}
       <AnimatePresence>
         {selectedAppointment && (
           <motion.div 
@@ -324,7 +317,6 @@ const NurseAppointments = () => {
 
               <div className="overflow-y-auto px-5 pb-5" style={{ WebkitOverflowScrolling: 'touch' }}>
                 
-                {/* Student Info */}
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-10 h-10 bg-maroon-50 dark:bg-maroon-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
@@ -339,7 +331,6 @@ const NurseAppointments = () => {
                   </div>
                 </div>
 
-                {/* Status Message */}
                 {selectedAppointment.status === 'pending' && (
                   <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/20 rounded-2xl p-4 mb-4">
                     <div className="flex items-start gap-2">
@@ -352,7 +343,6 @@ const NurseAppointments = () => {
                   </div>
                 )}
 
-                {/* Details */}
                 <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4 space-y-3 mb-4">
                   <div className="flex items-center gap-3">
                     <Stethoscope className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -384,7 +374,6 @@ const NurseAppointments = () => {
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="space-y-2">
                   {selectedAppointment.status === 'pending' && (
                     <>
@@ -422,7 +411,6 @@ const NurseAppointments = () => {
         )}
       </AnimatePresence>
 
-      {/* Reject Reason Modal */}
       <AnimatePresence>
         {rejectModal && (
           <motion.div 

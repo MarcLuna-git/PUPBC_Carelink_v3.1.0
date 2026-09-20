@@ -10,15 +10,9 @@ class EmailVerification extends Model
 {
     use HasFactory;
 
-    /**
-     * Indicates that the IDs are non-incrementing.
-     */
     protected $keyType = 'string';
     public $incrementing = false;
 
-    /**
-     * Boot function for UUID generation.
-     */
     protected static function boot()
     {
         parent::boot();
@@ -30,11 +24,7 @@ class EmailVerification extends Model
         });
     }
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     protected $fillable = [
         'user_id',
         'otp',
@@ -43,29 +33,18 @@ class EmailVerification extends Model
         'is_used',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected $casts = [
         'expires_at' => 'datetime',
         'is_used' => 'boolean',
     ];
 
-    /**
-     * Get the user that owns the verification.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Check if the OTP is still valid.
-     *
-     * @return bool
-     */
+    /** @return bool */
     public function isValid()
     {
         return !$this->is_used && $this->expires_at->isFuture();

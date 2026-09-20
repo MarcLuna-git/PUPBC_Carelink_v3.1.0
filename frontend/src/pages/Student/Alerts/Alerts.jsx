@@ -62,7 +62,7 @@ const Alerts = () => {
 
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchAll, 60000); // Changed to 60s
+    const interval = setInterval(fetchAll, 60000);
     return () => clearInterval(interval);
   }, [fetchAll]);
 
@@ -145,7 +145,6 @@ const Alerts = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // ==================== SKELETON LOADING ====================
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-5">
@@ -181,7 +180,6 @@ const Alerts = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-5 pb-6">
       
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Alerts</h1>
@@ -200,7 +198,6 @@ const Alerts = () => {
         <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-2xl text-sm text-center">{error}</div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2">
         <button onClick={() => setTab('notifications')}
           className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
@@ -218,7 +215,6 @@ const Alerts = () => {
         </button>
       </div>
 
-      {/* Rest of the component stays the same */}
       {tab === 'notifications' && (
         <div className="space-y-2">
           {unreadCount > 0 && (

@@ -258,9 +258,6 @@ const Register = () => {
   const idRegex =
     /^\d{4}-\d{5}-BN-[01]$/i;
 
-  // ==========================================
-  // OTP COOLDOWN
-  // ==========================================
 
   useEffect(() => {
     if (otpCooldown <= 0) {
@@ -286,9 +283,6 @@ const Register = () => {
       window.clearInterval(timer);
   }, [otpCooldown]);
 
-  // ==========================================
-  // INPUT CHANGE
-  // ==========================================
 
   const handleChange = (e) => {
     const {
@@ -393,8 +387,6 @@ const Register = () => {
         updated.section = '';
       }
 
-      // Prevent invalid dates such as
-      // February 31.
       if (
         name === 'dobMonth' ||
         name === 'dobYear'
@@ -441,9 +433,6 @@ const Register = () => {
     }
   };
 
-  // ==========================================
-  // VALIDATION
-  // ==========================================
 
   const validate = () => {
     const newErrors = {};
@@ -583,9 +572,6 @@ const Register = () => {
     );
   };
 
-  // ==========================================
-  // RESEND REGISTRATION OTP
-  // ==========================================
 
   const handleResendOtp =
     async () => {
@@ -649,15 +635,11 @@ const Register = () => {
       }
     };
 
-  // ==========================================
-  // SUBMIT
-  // ==========================================
 
   const handleSubmit =
     async (e) => {
       e.preventDefault();
 
-      // OTP STEP
       if (otpStep) {
         if (
           !/^\d{6}$/.test(otp)
@@ -711,7 +693,6 @@ const Register = () => {
         return;
       }
 
-      // REGISTRATION STEP
       if (!validate()) {
         return;
       }
@@ -884,7 +865,6 @@ const Register = () => {
             className="space-y-3"
           >
 
-            {/* NAME */}
             <div className="grid grid-cols-2 gap-3">
 
               <div>
@@ -942,7 +922,6 @@ const Register = () => {
               />
             </div>
 
-            {/* STUDENT ID */}
             <div>
               <div className="relative">
 
@@ -971,7 +950,6 @@ const Register = () => {
               />
             </div>
 
-            {/* EMAIL */}
             <div>
               <div className="relative">
 
@@ -995,7 +973,6 @@ const Register = () => {
               />
             </div>
 
-            {/* MOBILE */}
             <div>
               <div className="relative">
 
@@ -1023,7 +1000,6 @@ const Register = () => {
               />
             </div>
 
-            {/* BIRTHDAY */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
 
@@ -1166,7 +1142,6 @@ const Register = () => {
               />
             </div>
 
-            {/* GENDER */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Gender
@@ -1220,7 +1195,6 @@ const Register = () => {
               />
             </div>
 
-            {/* COURSE / YEAR */}
             <div className="grid grid-cols-2 gap-3">
 
               <div>
@@ -1351,7 +1325,6 @@ const Register = () => {
               />
             </div>
 
-            {/* PASSWORDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
               <div>
@@ -1462,7 +1435,6 @@ const Register = () => {
                 </p>
               )}
 
-            {/* OTP */}
             {otpStep && (
               <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
 
@@ -1571,7 +1543,6 @@ const Register = () => {
               </div>
             )}
 
-            {/* TERMS */}
             {!otpStep && (
               <div>
                 <div className="flex items-start space-x-2">

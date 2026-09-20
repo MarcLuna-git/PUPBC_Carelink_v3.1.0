@@ -5,17 +5,13 @@ const getApiUrl = () => {
     ?.trim()
     .replace(/\/+$/, '');
 
-  // In development, automatically use the same host/IP
-  // that was used to open the frontend.
-  // Example:
-  // http://10.153.181.133:5173
-  // -> API becomes http://10.153.181.133:8000/api
+  // Sa dev, sundin ang host/IP na ginamit para buksan ang frontend.
   if (import.meta.env.DEV) {
     const host = window.location.hostname;
     return `http://${host}:8000/api`;
   }
 
-  // Production can use an explicitly configured URL.
+  // Sa production, puwedeng configured API URL ang gamitin.
   if (configuredUrl) {
     return configuredUrl;
   }

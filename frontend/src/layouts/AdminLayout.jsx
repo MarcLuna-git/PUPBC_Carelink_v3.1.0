@@ -11,7 +11,6 @@ const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
 
-  // Apply dark mode on mount, cleanup on unmount
   useEffect(() => {
     const savedMode = localStorage.getItem('darkMode') === 'true';
     setDarkMode(savedMode);
@@ -26,7 +25,6 @@ const AdminLayout = ({ children }) => {
     };
   }, []);
 
-  // Listen for dark mode changes
   useEffect(() => {
     const handleDarkModeChange = () => {
       const isDark = localStorage.getItem('darkMode') === 'true';
@@ -71,7 +69,6 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-gray-950 flex flex-col transition-colors duration-300">
       
-      {/* Desktop Sidebar */}
       <div className="hidden lg:flex">
         <aside className={`w-64 flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 shadow-2xl transition-all duration-300 ${
           darkMode 
@@ -140,10 +137,8 @@ const AdminLayout = ({ children }) => {
         </aside>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
         
-        {/* Header */}
         <header className="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
@@ -161,7 +156,6 @@ const AdminLayout = ({ children }) => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div key={location.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
@@ -171,7 +165,6 @@ const AdminLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Mobile Sidebar */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside className={`fixed lg:hidden inset-y-0 left-0 z-50 w-64 flex flex-col min-h-screen transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${
         darkMode 

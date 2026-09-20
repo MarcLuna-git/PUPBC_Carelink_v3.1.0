@@ -8,11 +8,10 @@ const NurseMedicine = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all'); // all, low_stock, expiring_soon, expired
+  const [filter, setFilter] = useState('all');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   
-  // Add/Edit Modal
   const [showModal, setShowModal] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -21,13 +20,11 @@ const NurseMedicine = () => {
     minimum_stock: 10, unit: 'tablet', dosage: '', expiry_date: '', description: ''
   });
 
-  // Stock Modal
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockMedicine, setStockMedicine] = useState(null);
-  const [stockAction, setStockAction] = useState('add'); // add or reduce
+  const [stockAction, setStockAction] = useState('add');
   const [stockQuantity, setStockQuantity] = useState(1);
 
-  // Delete Confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteMedicine, setDeleteMedicine] = useState(null);
 
@@ -199,7 +196,6 @@ const NurseMedicine = () => {
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Medicine Inventory</h1>
@@ -212,14 +208,12 @@ const NurseMedicine = () => {
         </button>
       </div>
 
-      {/* Message */}
       {message && (
         <div className={`p-3 rounded-2xl text-sm text-center ${
           messageType === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
         }`}>{message}</div>
       )}
 
-      {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <form onSubmit={handleSearch} className="flex-1 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -239,7 +233,6 @@ const NurseMedicine = () => {
         </div>
       </div>
 
-      {/* Medicine Grid */}
       {medicines.length === 0 ? (
         <div className="text-center py-16">
           <Pill className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -315,7 +308,6 @@ const NurseMedicine = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -376,7 +368,6 @@ const NurseMedicine = () => {
         </div>
       )}
 
-      {/* Stock Modal */}
       {showStockModal && stockMedicine && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm">
@@ -402,7 +393,6 @@ const NurseMedicine = () => {
         </div>
       )}
 
-      {/* Delete Confirmation */}
       {showDeleteConfirm && deleteMedicine && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm text-center">

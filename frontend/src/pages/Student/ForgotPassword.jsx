@@ -58,9 +58,7 @@ const ForgotPassword = () => {
               'A password reset code was sent to your email.'
           );
 
-          // Proceed to reset screen.
-          // Email is passed so user doesn't need
-          // to type it again.
+          // Ipasa ang email para hindi na ulit i-type.
           window.setTimeout(
             () => {
               navigate(

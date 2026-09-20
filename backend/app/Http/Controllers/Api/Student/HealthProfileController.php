@@ -22,7 +22,7 @@ class HealthProfileController extends Controller
     public function update(Request $request)
     {
         $profile = HealthProfile::where('user_id', auth()->id())->firstOrFail();
-        // Partial edits must leave the complete record valid, including consent.
+        // Dapat valid pa rin ang buong record at consent pagkatapos ng partial edit.
         $data = Validator::make(array_merge($profile->toArray(), $request->all()), HealthProfile::validationRules())->validate();
         $profile->fill($data);
         $profile->completed_at = $profile->completed_at ?: now();

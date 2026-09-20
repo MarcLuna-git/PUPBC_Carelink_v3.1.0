@@ -1,11 +1,6 @@
 <?php
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    */
 
     'paths' => [
         'api/*',
@@ -30,7 +25,6 @@ return [
 
         env('FRONTEND_URL', 'http://localhost:5173'),
 
-        // Render deployment domains
         'https://pup-carelink-testing-frontend.onrender.com',
         'https://pup-carelink-testing-backend.onrender.com',
         'https://carelink-frontend.onrender.com',
@@ -38,15 +32,6 @@ return [
     ],
 
     'allowed_origins_patterns' => [
-        /*
-        |--------------------------------------------------------------------------
-        | Local / hotspot development
-        |--------------------------------------------------------------------------
-        |
-        | Allows frontend devices connected to common private LAN/hotspot
-        | address ranges.
-        |
-        */
 
         // 192.168.0.0/16
         '#^http://192\.168\.\d{1,3}\.\d{1,3}:5173$#i',
@@ -57,12 +42,11 @@ return [
         // 172.16.0.0 - 172.31.255.255
         '#^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:5173$#i',
 
-        // Optional Vite/older frontend port 3000 support
+        // Para sa frontend na gumagamit pa ng port 3000.
         '#^http://192\.168\.\d{1,3}\.\d{1,3}:3000$#i',
         '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$#i',
         '#^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:3000$#i',
 
-        // Render
         '#^https://[a-z0-9-]+\.onrender\.com$#i',
     ],
 

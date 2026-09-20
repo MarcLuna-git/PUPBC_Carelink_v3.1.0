@@ -54,7 +54,6 @@ const Notifications = () => {
     }
   }, []);
 
-  // Polling every 30 seconds
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
@@ -122,7 +121,7 @@ const Notifications = () => {
   const deleteNotification = async (id) => {
     setActionLoading(id);
     try {
-      // Note: You may need a delete endpoint. For now, just remove from state.
+      // Local state lang ang removal; walang delete API call.
       setNotifications(notifications.filter(n => n.id !== id));
       showMessage('Notification removed');
     } catch (err) {
@@ -152,7 +151,6 @@ const Notifications = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // ==================== SKELETON LOADING ====================
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-5">
@@ -187,7 +185,6 @@ const Notifications = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-5 pb-6">
       
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
@@ -206,7 +203,6 @@ const Notifications = () => {
         )}
       </div>
 
-      {/* Toast Message */}
       <AnimatePresence>
         {message && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
@@ -216,7 +212,6 @@ const Notifications = () => {
         )}
       </AnimatePresence>
 
-      {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
           { key: 'all', label: 'All', count: notifications.length },
@@ -235,7 +230,6 @@ const Notifications = () => {
         ))}
       </div>
 
-      {/* Notifications List */}
       <div className="space-y-3">
         {filteredNotifications.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 py-12 text-center">

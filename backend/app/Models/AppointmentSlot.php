@@ -18,9 +18,6 @@ class AppointmentSlot extends Model
         'date' => 'date',
     ];
 
-    /**
-     * Get available slots for a specific date
-     */
     public static function getAvailableSlots($date)
     {
         $timeSlots = [
@@ -33,7 +30,6 @@ class AppointmentSlot extends Model
         $slots = [];
         
         foreach ($timeSlots as $time) {
-            // Count approved + pending appointments for this slot
             $bookedCount = Appointment::whereDate('appointment_date', $date)
                 ->where('time_slot', $time)
                 ->whereIn('status', ['approved', 'pending'])
@@ -52,9 +48,6 @@ class AppointmentSlot extends Model
         return $slots;
     }
 
-    /**
-     * Check if a specific slot is available
-     */
     public static function isSlotAvailable($date, $timeSlot)
     {
         if (self::isPastSlot($date, $timeSlot)) {
@@ -76,9 +69,6 @@ class AppointmentSlot extends Model
         return $slot->isPast();
     }
 
-    /**
-     * Get remaining slots count
-     */
     public static function remainingSlots($date, $timeSlot)
     {
         $bookedCount = Appointment::whereDate('appointment_date', $date)

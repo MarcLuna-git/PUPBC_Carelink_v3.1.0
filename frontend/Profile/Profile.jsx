@@ -57,7 +57,6 @@ const Profile = () => {
   return (
     <div className="space-y-5 max-w-2xl mx-auto animate-fadeInUp">
       
-      {/* Profile Card */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-2xl flex items-center justify-center shadow-lg shadow-maroon-800/20">
@@ -71,7 +70,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Menu Sections */}
       {menuSections.map((section, i) => (
         <div key={i} className="space-y-1">
           <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2">{section.title}</p>
@@ -87,7 +85,6 @@ const Profile = () => {
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.label}</p>
                     <p className="text-xs text-gray-400">{item.desc}</p>
                   </div>
-                  {/* Toggle Switch */}
                   <div className={`relative w-11 h-6 rounded-full transition-colors ${darkMode ? 'bg-maroon-800' : 'bg-gray-300 dark:bg-gray-600'}`}>
                     <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${darkMode ? 'translate-x-[22px]' : 'translate-x-0.5'}`}></div>
                   </div>
@@ -110,7 +107,6 @@ const Profile = () => {
         </div>
       ))}
 
-      {/* Logout */}
       <button onClick={handleLogout}
         className="w-full flex items-center justify-center space-x-2 py-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold rounded-2xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
         <LogOut className="w-5 h-5" />

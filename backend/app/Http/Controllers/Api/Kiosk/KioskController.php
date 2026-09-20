@@ -43,7 +43,7 @@ class KioskController extends Controller
             ClinicQueue::lock();
             $appointment = KioskIdentity::appointment($student);
             $existing = AppointmentCheckin::where('appointment_id', $appointment->id)->where('is_walk_in', false)->first();
-            if ($existing) return $existing; // Idempotent: never allocate another row/number.
+            if ($existing) return $existing; // Sa retry, gamitin ang existing row at queue number.
             $flags = $request->input('red_flags') ?: [];
             $priority = $this->triagePriority($student, $request->severity, $flags, $request->chief_complaint);
             $type = $priority === 'HIGH' ? 'priority' : 'regular';
@@ -74,7 +74,7 @@ class KioskController extends Controller
     {
         $queue = ClinicQueue::ordered()->get();
         $serving = $queue->firstWhere('status', 'serving');
-        // Nurse routes are independently authenticated and role-protected.
+        // Hiwalay ang auth at role checks ng Nurse routes.
         $nurse = $request->is('api/nurse/*');
         return response()->json(['success' => true, 'data' => [
             'now_serving' => $serving ? ($nurse ? $serving : $this->ticket($serving)) : null,
@@ -86,7 +86,7 @@ class KioskController extends Controller
     {
         $next = DB::transaction(function () {
             ClinicQueue::lock();
-            // Serving remains open until consultation save. Include older unfinished visits.
+            // Kasama ang older unfinished visits hanggang ma-save ang consultation.
             abort_if(AppointmentCheckin::where('is_walk_in', false)->where('status', 'serving')->exists(), 409, 'Complete the current consultation before calling another patient.');
             $next = ClinicQueue::ordered()->where('status', 'waiting')->first();
             if ($next) $next->update(['status' => 'serving']);

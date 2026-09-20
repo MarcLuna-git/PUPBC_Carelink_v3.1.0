@@ -45,7 +45,6 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTIdentifier() { return $this->getKey(); }
     public function getJWTCustomClaims() { return []; }
 
-    // Relationships
     public function studentProfile() { return $this->hasOne(StudentProfile::class); }
     public function healthProfile() { return $this->hasOne(HealthProfile::class); }
     public function profile() { return $this->hasOne(StudentProfile::class); }

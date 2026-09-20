@@ -146,13 +146,11 @@ const QR = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto pb-6">
       
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My QR Code</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Scan this at the clinic kiosk to check in</p>
       </div>
 
-      {/* Message Toast */}
       {message && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
           className="mb-5 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-2xl text-sm font-medium text-center border border-green-200 dark:border-green-800/20">
@@ -160,17 +158,13 @@ const QR = () => {
         </motion.div>
       )}
 
-      {/* Main Content - 2 Column Layout on Desktop */}
       <div className="grid lg:grid-cols-5 gap-6">
         
-        {/* Left Column - QR Card + Buttons */}
         <div className="lg:col-span-3 space-y-4">
           
-          {/* QR Card */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 text-center shadow-sm">
             
-            {/* QR with Logo Overlay */}
             <div className="relative inline-block mb-5">
               <div className="bg-white border-[3px] border-maroon-800 dark:border-maroon-700 rounded-2xl p-3 sm:p-4 shadow-lg">
                 {qrDataUrl ? (
@@ -185,7 +179,6 @@ const QR = () => {
                   </div>
                 )}
               </div>
-              {/* PUP Logo Center */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white rounded-full shadow-md flex items-center justify-center border-2 border-maroon-800">
                   <img src={clinicLogo} alt="PUPBC CareLink" className="w-full h-full object-cover rounded-full" />
@@ -193,7 +186,6 @@ const QR = () => {
               </div>
             </div>
 
-            {/* User Info */}
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               {user.first_name} {user.last_name}
             </h2>
@@ -202,7 +194,6 @@ const QR = () => {
               {user.course} - {user.year}{user.section}
             </p>
 
-            {/* Hash + Copy */}
             <div className="flex items-center justify-center gap-2 mt-4">
               <code className="text-xs bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-xl text-gray-500 dark:text-gray-400 font-mono max-w-[200px] truncate">
                 {qrCodeHash}
@@ -216,7 +207,6 @@ const QR = () => {
             </div>
           </motion.div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3">
             <button 
               onClick={handleDownload} 
@@ -235,10 +225,8 @@ const QR = () => {
           </div>
         </div>
 
-        {/* Right Column - Instructions + Privacy */}
         <div className="lg:col-span-2 space-y-4">
           
-          {/* How to Use */}
           <div className="bg-maroon-50 dark:bg-maroon-900/10 border border-maroon-200 dark:border-maroon-800/20 rounded-3xl p-5 sm:p-6">
             <h3 className="font-bold text-maroon-900 dark:text-maroon-400 mb-4 flex items-center gap-2 text-base sm:text-lg">
               <Smartphone className="w-5 h-5" />
@@ -265,7 +253,6 @@ const QR = () => {
             </div>
           </div>
 
-          {/* Privacy Note */}
           <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-3xl p-5 sm:p-6">
             <div className="flex items-start gap-3">
               <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />

@@ -41,7 +41,6 @@ class Medicine extends Model
         return $this->belongsTo(User::class, 'added_by');
     }
 
-    // Scopes
     public function scopeLowStock($query)
     {
         return $query->whereColumn('quantity', '<=', 'minimum_stock');

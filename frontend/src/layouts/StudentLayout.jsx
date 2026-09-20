@@ -13,7 +13,6 @@ const StudentLayout = ({ children }) => {
   const [greeting, setGreeting] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Apply dark mode on mount
   useEffect(() => {
     const savedMode = localStorage.getItem('darkMode') === 'true';
     setDarkMode(savedMode);
@@ -27,7 +26,6 @@ const StudentLayout = ({ children }) => {
     };
   }, []);
 
-  // Listen for dark mode changes
   useEffect(() => {
     const handleDarkModeChange = () => {
       const isDark = localStorage.getItem('darkMode') === 'true';
@@ -37,7 +35,6 @@ const StudentLayout = ({ children }) => {
     return () => window.removeEventListener('darkModeChange', handleDarkModeChange);
   }, []);
 
-  // Fetch unread notification count
   useEffect(() => {
     const fetchUnread = async () => {
       try {
@@ -52,12 +49,11 @@ const StudentLayout = ({ children }) => {
           setUnreadCount(items.filter(n => !n.read).length);
         }
       } catch (err) {
-        // Silent fail
       }
     };
     
     fetchUnread();
-    const interval = setInterval(fetchUnread, 30000); // Poll every 30s
+    const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -86,7 +82,6 @@ const StudentLayout = ({ children }) => {
     navigate('/login');
   };
 
-  // COMPLETE Desktop Sidebar Menu
   const desktopNavItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/student/appointments', icon: Calendar, label: 'Appointments' },
@@ -100,7 +95,6 @@ const StudentLayout = ({ children }) => {
     { path: '/student/about', icon: Info, label: 'About' },
   ];
 
-  // Mobile Bottom Nav (5 main items only)
   const mobileNavItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Home' },
     { path: '/student/appointments', icon: Calendar, label: 'Book' },
@@ -114,7 +108,6 @@ const StudentLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#f8f9fb] dark:bg-gray-950 flex flex-col transition-colors duration-300">
       
-      {/* DESKTOP SIDEBAR */}
       <div className="hidden lg:flex">
         <aside className={`w-64 flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 shadow-2xl transition-all duration-300 ${
           darkMode 
@@ -122,7 +115,6 @@ const StudentLayout = ({ children }) => {
             : 'bg-gradient-to-b from-maroon-800 to-maroon-900 shadow-maroon-900/30'
         }`}>
           
-          {/* Logo */}
           <div className={`h-16 flex items-center px-5 border-b transition-colors ${
             darkMode ? 'border-white/5' : 'border-white/10'
           }`}>
@@ -138,7 +130,6 @@ const StudentLayout = ({ children }) => {
             </Link>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {desktopNavItems.map((item) => (
               <Link key={item.path} to={item.path}
@@ -153,7 +144,6 @@ const StudentLayout = ({ children }) => {
                 }`}>
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{item.label}</span>
-                {/* Show unread badge for Notifications */}
                 {item.path === '/student/alerts' && unreadCount > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -163,7 +153,6 @@ const StudentLayout = ({ children }) => {
             ))}
           </nav>
 
-          {/* User + Logout */}
           <div className={`p-3 border-t space-y-2 transition-colors ${
             darkMode ? 'border-white/5' : 'border-white/10'
           }`}>
@@ -195,12 +184,9 @@ const StudentLayout = ({ children }) => {
         </aside>
       </div>
 
-      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
         
-        {/* HEADER */}
         <header className="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
-          {/* Mobile greeting */}
           <div className="lg:hidden flex items-center space-x-3">
             <div className="w-8 h-8 bg-maroon-800 rounded-xl flex items-center justify-center">
               <Activity className="w-4 h-4 text-white" />
@@ -211,16 +197,13 @@ const StudentLayout = ({ children }) => {
             </div>
           </div>
 
-          {/* Desktop greeting */}
           <div className="hidden lg:block">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               {greeting}, <span className="text-maroon-800 dark:text-maroon-400">{user.first_name}!</span>
             </p>
           </div>
 
-          {/* Right icons */}
           <div className="flex items-center space-x-1">
-            {/* Bell with live unread count */}
             <Link to="/student/alerts" className="relative p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -230,14 +213,12 @@ const StudentLayout = ({ children }) => {
               )}
             </Link>
             
-            {/* Dark/Light Mode Toggle */}
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
               {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto pb-28 lg:pb-6 transition-colors">
           <AnimatePresence mode="wait">
             <motion.div
@@ -253,7 +234,6 @@ const StudentLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* MOBILE BOTTOM NAV */}
       <nav className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
         <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-black/10 dark:shadow-black/30 border border-gray-200/50 dark:border-gray-700/50 px-2 py-2">
           <div className="flex items-center justify-around">

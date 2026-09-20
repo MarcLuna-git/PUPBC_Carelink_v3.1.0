@@ -4,7 +4,7 @@ namespace App\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 
-// Read historical double-encoded JSON without rewriting or discarding records.
+// Basahin ang legacy double-encoded JSON nang hindi binabago ang records.
 class NormalizedArray implements CastsAttributes
 {
     public function get($model, string $key, $value, array $attributes)

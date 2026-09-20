@@ -22,16 +22,8 @@ use App\Http\Controllers\Api\Nurse\EmergencyEncounterController;
 use App\Http\Controllers\Api\Kiosk\CheckinController;
 use App\Http\Controllers\Api\Kiosk\KioskController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes - PUPBC CareLink
-|--------------------------------------------------------------------------
-*/
 
 
-// ============================================
-// HEALTH CHECK
-// ============================================
 
 Route::get('/health', function () {
 
@@ -57,9 +49,6 @@ Route::get('/health', function () {
 });
 
 
-// ============================================
-// TEST ROUTE
-// ============================================
 
 Route::get('/test', function () {
 
@@ -73,9 +62,6 @@ Route::get('/test', function () {
 });
 
 
-// ============================================
-// PUBLIC KIOSK ROUTES
-// ============================================
 
 Route::prefix('kiosk')
     ->middleware([
@@ -116,9 +102,6 @@ Route::prefix('kiosk')
     });
 
 
-// ============================================
-// PUBLIC AUTHENTICATION ROUTES
-// ============================================
 
 Route::prefix('auth')
     ->middleware([
@@ -127,9 +110,6 @@ Route::prefix('auth')
     ])
     ->group(function () {
 
-        // ----------------------------------------
-        // Student Registration
-        // ----------------------------------------
 
         Route::post(
             '/register',
@@ -141,17 +121,12 @@ Route::prefix('auth')
             [AuthController::class, 'verifyRegistration']
         );
 
-        // NEW:
-        // Resend registration OTP.
         Route::post(
             '/register/resend-otp',
             [AuthController::class, 'resendRegistrationOtp']
         );
 
 
-        // ----------------------------------------
-        // Student Login
-        // ----------------------------------------
 
         Route::post(
             '/login',
@@ -159,9 +134,6 @@ Route::prefix('auth')
         );
 
 
-        // ----------------------------------------
-        // Password Recovery
-        // ----------------------------------------
 
         Route::post(
             '/forgot-password',
@@ -174,26 +146,13 @@ Route::prefix('auth')
         );
 
 
-        // ----------------------------------------
-        // Nurse Login
-        // ----------------------------------------
 
-        // Preferred Nurse login route.
         Route::post(
             '/nurse-login',
             [AuthController::class, 'nurseLogin']
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Legacy compatibility route
-        |--------------------------------------------------------------------------
-        |
-        | Current frontend may still call /auth/admin-login.
-        | There is NO admin role.
-        | This route authenticates Nurse accounts only.
-        |
-        */
+        // Legacy admin-login alias ito; Nurse accounts lang ang puwede.
 
         Route::post(
             '/admin-login',
@@ -202,9 +161,6 @@ Route::prefix('auth')
     });
 
 
-// ============================================
-// PUBLIC ANNOUNCEMENTS
-// ============================================
 
 Route::middleware('throttle:60,1')
     ->group(function () {
@@ -221,9 +177,6 @@ Route::middleware('throttle:60,1')
     });
 
 
-// ============================================
-// PROTECTED ROUTES
-// ============================================
 
 Route::middleware([
     'jwt.configured',
@@ -233,9 +186,6 @@ Route::middleware([
     ->group(function () {
 
 
-        // ========================================
-        // AUTH MANAGEMENT
-        // ========================================
 
         Route::prefix('auth')
             ->group(function () {
@@ -262,9 +212,6 @@ Route::middleware([
             });
 
 
-        // ========================================
-        // NOTIFICATIONS
-        // ========================================
 
         Route::prefix('notifications')
             ->group(function () {
@@ -336,18 +283,12 @@ Route::middleware([
             });
 
 
-        // ========================================
-        // STUDENT ROUTES
-        // ========================================
 
         Route::prefix('student')
             ->middleware('student')
             ->group(function () {
 
 
-                // --------------------------------
-                // Clinic History
-                // --------------------------------
 
                 Route::get(
                     '/clinic-history',
@@ -368,9 +309,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Student Profile
-                // --------------------------------
 
                 Route::get(
                     '/profile',
@@ -388,9 +326,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Health Profile
-                // --------------------------------
 
                 Route::get(
                     '/health-profile',
@@ -413,9 +348,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Appointment Management
-                // --------------------------------
 
                 Route::get(
                     '/appointments',
@@ -427,11 +359,7 @@ Route::middleware([
                     [StudentAppointmentController::class, 'store']
                 );
 
-                /*
-                 * Keep specific routes before /appointments/{id}
-                 * so Laravel does not interpret strings such as
-                 * "check-duplicate" as an appointment ID.
-                 */
+                // Unahin ang specific routes para hindi maging appointment ID ang check-duplicate.
 
                 Route::get(
                     '/appointments/check-duplicate',
@@ -459,9 +387,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Consultations / History
-                // --------------------------------
 
                 Route::get(
                     '/consultations',
@@ -479,9 +404,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // QR
-                // --------------------------------
 
                 Route::get(
                     '/qr',
@@ -494,9 +416,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Dashboard
-                // --------------------------------
 
                 Route::get(
                     '/dashboard-stats',
@@ -515,18 +434,12 @@ Route::middleware([
             });
 
 
-        // ========================================
-        // NURSE ROUTES
-        // ========================================
 
         Route::prefix('nurse')
             ->middleware('nurse')
             ->group(function () {
 
 
-                // --------------------------------
-                // Nurse Profile
-                // --------------------------------
 
                 Route::put(
                     '/profile',
@@ -542,9 +455,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Clinic History
-                // --------------------------------
 
                 Route::get(
                     '/clinic-history',
@@ -562,9 +472,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Dashboard
-                // --------------------------------
 
                 Route::get(
                     '/dashboard-stats',
@@ -582,9 +489,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Queue
-                // --------------------------------
 
                 Route::get(
                     '/queue/today',
@@ -602,19 +506,13 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Appointment Management
-                // --------------------------------
 
                 Route::get(
                     '/appointments',
                     [NurseAppointmentController::class, 'index']
                 );
 
-                /*
-                 * IMPORTANT:
-                 * Specific GET routes come before /appointments/{id}.
-                 */
+                // Unahin ang specific GET routes bago ang appointments/{id}.
 
                 Route::get(
                     '/appointments/filter/{status}',
@@ -652,9 +550,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Student Management
-                // --------------------------------
 
                 Route::get(
                     '/students',
@@ -697,9 +592,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Consultation Management
-                // --------------------------------
 
                 Route::get(
                     '/consultations',
@@ -732,9 +624,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Emergency Encounter
-                // --------------------------------
 
                 Route::post(
                     '/emergency-encounters',
@@ -742,9 +631,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Medicine Inventory
-                // --------------------------------
 
                 Route::get(
                     '/medicines/stats',
@@ -792,9 +678,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Announcements
-                // --------------------------------
 
                 Route::get(
                     '/announcements',
@@ -822,9 +705,6 @@ Route::middleware([
                 );
 
 
-                // --------------------------------
-                // Reports
-                // --------------------------------
 
                 Route::get(
                     '/reports/consultations',
@@ -844,9 +724,6 @@ Route::middleware([
     });
 
 
-// ============================================
-// FALLBACK
-// ============================================
 
 Route::fallback(function () {
 

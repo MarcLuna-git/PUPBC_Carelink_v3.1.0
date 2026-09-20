@@ -108,7 +108,6 @@ const ProfileEdit = () => {
   const inputClass = "w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-maroon-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed";
   const labelClass = "text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1.5";
 
-  // ==================== SKELETON LOADING ====================
   if (fetching) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-5">
@@ -150,7 +149,6 @@ const ProfileEdit = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-5 pb-6">
       
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link to="/student/profile" className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition flex-shrink-0">
@@ -178,14 +176,12 @@ const ProfileEdit = () => {
         </div>
       </div>
 
-      {/* Message */}
       {message && (
         <div className={`p-3 rounded-2xl text-sm text-center ${messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'}`}>{message}</div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Left - Avatar + Student Info */}
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
             <div className="relative inline-block">
@@ -227,7 +223,6 @@ const ProfileEdit = () => {
           </div>
         </div>
 
-        {/* Right - Editable Fields */}
         <div className="lg:col-span-2 space-y-4">
           
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">

@@ -17,7 +17,6 @@ const NurseLogin = () => {
   const [capsLockOn, setCapsLockOn] = useState(false);
   const emailRef = useRef(null);
 
-  // Focus email on mount
   useEffect(() => {
     emailRef.current?.focus();
   }, []);
@@ -39,7 +38,6 @@ const NurseLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (!form.email.trim()) {
       setMessage({ type: 'error', text: 'Please enter your email address.' });
       return;
@@ -79,9 +77,7 @@ const NurseLogin = () => {
 
   return (
     <div className="min-h-screen flex bg-[#FAFAFA] overflow-hidden">
-      {/* ============ LEFT PANEL ============ */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[45%] relative bg-gradient-to-br from-maroon-900 via-maroon-800 to-maroon-950 overflow-hidden">
-        {/* Grid Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.03]"
           style={{ 
@@ -90,14 +86,11 @@ const NurseLogin = () => {
           }}
         />
         
-        {/* Abstract Medical Shapes */}
         <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-yellow-500/5 blur-[120px]" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-maroon-400/10 blur-[100px]" />
         <div className="absolute top-1/3 right-20 w-72 h-72 rounded-full bg-yellow-400/5 blur-[80px]" />
         
-        {/* Content */}
         <div className="relative z-10 flex flex-col justify-between h-full p-12 xl:p-16">
-          {/* Top: Logo & Brand */}
           <div>
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -114,7 +107,6 @@ const NurseLogin = () => {
               </div>
             </motion.div>
 
-            {/* University Info */}
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -131,7 +123,6 @@ const NurseLogin = () => {
               </div>
             </motion.div>
 
-            {/* Hero Text */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -149,7 +140,6 @@ const NurseLogin = () => {
             </motion.div>
           </div>
 
-          {/* Features Grid */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +157,6 @@ const NurseLogin = () => {
             ))}
           </motion.div>
 
-          {/* Bottom: Tagline */}
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -179,9 +168,7 @@ const NurseLogin = () => {
         </div>
       </div>
 
-      {/* ============ RIGHT PANEL ============ */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16 bg-[#FAFAFA]">
-        {/* Background subtle shapes */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-maroon-50/50 rounded-full blur-[150px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-yellow-50/50 rounded-full blur-[120px] pointer-events-none" />
 
@@ -191,7 +178,6 @@ const NurseLogin = () => {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 w-full max-w-[440px]"
         >
-          {/* Mobile Logo (visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-maroon-800/20">
               <Stethoscope className="w-8 h-8 text-yellow-400" />
@@ -200,9 +186,7 @@ const NurseLogin = () => {
             <p className="text-sm text-gray-500">PUPBC CareLink</p>
           </div>
 
-          {/* Login Card */}
           <div className="bg-white rounded-[28px] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] border border-gray-100 p-8 sm:p-10">
-            {/* Card Header */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-1">
                 <Heart className="w-5 h-5 text-red-400" />
@@ -212,7 +196,6 @@ const NurseLogin = () => {
               <p className="text-sm text-gray-500 mt-1">Sign in to access the nurse dashboard</p>
             </div>
 
-            {/* Alert Messages */}
             <AnimatePresence>
               {message.text && (
                 <motion.div 
@@ -235,9 +218,7 @@ const NurseLogin = () => {
               )}
             </AnimatePresence>
 
-            {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                   Email Address
@@ -258,7 +239,6 @@ const NurseLogin = () => {
                 </div>
               </div>
 
-              {/* Password Field */}
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Password
@@ -287,7 +267,6 @@ const NurseLogin = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {/* Caps Lock Warning */}
                 <AnimatePresence>
                   {capsLockOn && (
                     <motion.p 
@@ -303,7 +282,6 @@ const NurseLogin = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Remember & Forgot Password */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -323,7 +301,6 @@ const NurseLogin = () => {
                 </button>
               </div>
 
-              {/* Submit Button */}
               <motion.button
                 type="submit"
                 disabled={loading}
@@ -345,14 +322,12 @@ const NurseLogin = () => {
               </motion.button>
             </form>
 
-            {/* Security Notice */}
             <p className="text-center text-xs text-gray-400 mt-6 flex items-center justify-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" />
               Secure, encrypted connection
             </p>
           </div>
 
-          {/* Bottom Help Text */}
           <p className="text-center text-sm text-gray-400 mt-6">
             Need help? Contact{' '}
             <a href="#" className="text-maroon-700 font-medium hover:text-maroon-900 transition-colors">

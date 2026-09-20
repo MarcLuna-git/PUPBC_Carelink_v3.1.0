@@ -21,29 +21,22 @@ const HealthProfile = () => {
   const totalSteps = 6;
 
   const [form, setForm] = useState({
-    // Step 1: Emergency Contact
     emergency_name: '', emergency_relationship: '', emergency_phone: '',
-    // Step 2: Medical History
     medical_history: [],
     allergy_details: '',
     other_medical_history: '',
     medications: '',
-    // Step 3: Hospitalization, Surgery, COVID
     hospitalized: false, hospitalization_date: '', hospitalization_diagnosis: '',
     surgery: false, surgery_date: '', surgery_diagnosis: '',
     had_covid: false, covid_date: '', covid_diagnosis: '',
-    // Step 4: Personal & Social History
     occupation: '', marital_status: '',
     tobacco_use: '', tobacco_amount: '', tobacco_duration: '',
     alcohol_use: '', other_substance_use: '',
     has_disability: false, disability_details: '',
-    // Female-only
     last_menstrual_period: '', has_children: false, number_of_children: '',
     age_first_pregnancy: '', gravidity: false, term: false, premature: false,
     abortion: false, living_children: false,
-    // Step 5: Family History
     family_history: [],
-    // Step 6: Consent
     consent_signature: '', agree_privacy: false, agree_terms: false,
     consent_date: new Date().toISOString().split('T')[0],
   });
@@ -62,7 +55,6 @@ const HealthProfile = () => {
     return () => { active = false; };
   }, []);
 
-  // ==================== LISTS ====================
   const medicalHistoryList = [
     "Convulsion / Epilepsy", "Tonsillitis (Recurrent)", "Hypertension (High Blood Pressure)",
     "Heart Disease", "Bronchial Asthma", "Tuberculosis", "COVID-19", "Pneumonia",
@@ -75,7 +67,6 @@ const HealthProfile = () => {
     "Asthma", "Diabetes Mellitus", "Epilepsy", "Tuberculosis"
   ];
 
-  // ==================== TOGGLE FUNCTIONS ====================
   const handleMedicalHistoryToggle = (condition) => {
     const current = form.medical_history;
     setForm({ ...form, medical_history: current.includes(condition) ? current.filter(c => c !== condition) : [...current, condition] });
@@ -86,7 +77,6 @@ const HealthProfile = () => {
     setForm({ ...form, family_history: current.includes(condition) ? current.filter(c => c !== condition) : [...current, condition] });
   };
 
-  // ==================== VALIDATION ====================
   const validateStep = (s) => {
     const newErrors = {};
     
@@ -109,7 +99,6 @@ const HealthProfile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ==================== HANDLERS ====================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     let formatted = type === 'checkbox' ? checked : value;
@@ -161,7 +150,6 @@ const HealthProfile = () => {
     } finally { setLoading(false); }
   };
 
-  // ==================== RENDER HELPERS ====================
   const steps = ['Emergency', 'Medical', 'History', 'Personal', 'Family', 'Consent'];
   const progress = Math.round((step / totalSteps) * 100);
   const inputClass = (field) => `w-full border rounded-2xl px-4 py-3 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-maroon-500 transition ${errors[field] ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200'}`;
@@ -196,12 +184,10 @@ const HealthProfile = () => {
     </div>
   );
 
-  // ==================== PAGE SKELETON LOADING ====================
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 lg:p-8">
-          {/* Progress Bar Skeleton */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <Skeleton className="h-3 w-20" />
@@ -213,7 +199,6 @@ const HealthProfile = () => {
             </div>
           </div>
 
-          {/* Content Skeleton */}
           <div className="space-y-4">
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-64" />
@@ -222,7 +207,6 @@ const HealthProfile = () => {
             <Skeleton className="h-12 w-full" />
           </div>
 
-          {/* Navigation Skeleton */}
           <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
             <Skeleton className="h-10 w-20" />
             <Skeleton className="h-10 w-24" />
@@ -232,12 +216,10 @@ const HealthProfile = () => {
     );
   }
 
-  // ==================== RENDER ====================
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 lg:p-8">
         
-        {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-xs text-gray-400 mb-2"><span>Step {step} of {totalSteps}</span><span>{progress}%</span></div>
           <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
@@ -254,7 +236,6 @@ const HealthProfile = () => {
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
             
-            {/* STEP 1 */}
             {step === 1 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><Shield className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Emergency Contact</span></h3>
@@ -279,7 +260,6 @@ const HealthProfile = () => {
               </div>
             )}
 
-            {/* STEP 2 */}
             {step === 2 && (
               <div className="space-y-5">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><ClipboardList className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Medical History</span></h3>
@@ -295,7 +275,6 @@ const HealthProfile = () => {
               </div>
             )}
 
-            {/* STEP 3 */}
             {step === 3 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><AlertCircle className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Hospitalization, Surgery & COVID-19</span></h3>
@@ -316,7 +295,6 @@ const HealthProfile = () => {
               </div>
             )}
 
-            {/* STEP 4 */}
             {step === 4 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><Heart className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Personal & Social History</span></h3>
@@ -349,7 +327,6 @@ const HealthProfile = () => {
               </div>
             )}
 
-            {/* STEP 5 */}
             {step === 5 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><ClipboardList className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Family Medical History</span></h3>
@@ -359,7 +336,6 @@ const HealthProfile = () => {
               </div>
             )}
 
-            {/* STEP 6 */}
             {step === 6 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><Check className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Consent & Signature</span></h3>
@@ -374,7 +350,6 @@ const HealthProfile = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
           {step > 1 ? <button onClick={prevStep} className="flex items-center space-x-1 px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"><ArrowLeft className="w-4 h-4" /><span>Back</span></button> : <div />}
           {step < totalSteps ? (

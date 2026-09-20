@@ -20,7 +20,7 @@ const KioskPage = () => {
   const [step, setStep] = useState('welcome');
   const [studentData, setStudentData] = useState(null);
   const [checkinData, setCheckinData] = useState(null);
-  const [scanMethod, setScanMethod] = useState(null); // 'qr' | 'manual'
+  const [scanMethod, setScanMethod] = useState(null);
 
   const handleStart = () => setStep('terms');
   const handleAgree = () => setStep('options');

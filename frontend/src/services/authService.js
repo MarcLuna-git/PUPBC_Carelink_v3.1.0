@@ -1,20 +1,14 @@
 import api from './api';
 
 const getPayload = (responseData) => {
-  // Supports both:
-  // { success, data: { token, user } }
-  // and
-  // { success, token, user }
+  // Tanggap ang token/user sa data object o sa root response.
   return responseData?.data ?? responseData;
 };
 
 const authService = {
-  // ==========================================
-  // NURSE LOGIN
-  // ==========================================
 
   async nurseLogin(email, password) {
-    // Keep legacy backend URL for compatibility.
+    // Legacy URL pa rin para compatible sa backend.
     const response = await api.post('/auth/admin-login', {
       email,
       password,
@@ -37,9 +31,6 @@ const authService = {
     return body;
   },
 
-  // ==========================================
-  // STUDENT LOGIN
-  // ==========================================
 
   async login(student_id, password, birthday) {
     const response = await api.post('/auth/login', {
@@ -65,9 +56,6 @@ const authService = {
     return body;
   },
 
-  // ==========================================
-  // REGISTRATION
-  // ==========================================
 
   async register(data) {
     const response = await api.post(
@@ -101,9 +89,6 @@ const authService = {
     return response.data;
   },
 
-  // ==========================================
-  // PASSWORD RECOVERY
-  // ==========================================
 
   async forgotPassword(email) {
     const response = await api.post(
@@ -116,8 +101,7 @@ const authService = {
     return response.data;
   },
 
-  // Reuses forgot-password endpoint.
-  // Backend invalidates the old OTP and creates a new one.
+  // Gamit ulit ang forgot-password endpoint; papalitan nito ang dating OTP.
   async resendPasswordResetOtp(email) {
     const response = await api.post(
       '/auth/forgot-password',
@@ -148,15 +132,12 @@ const authService = {
     return response.data;
   },
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
 
   async logout() {
     try {
       await api.post('/auth/logout');
     } catch (e) {
-      // Clear local session even if token is already invalid.
+      // I-clear ang local session kahit invalid na ang token.
     }
 
     localStorage.removeItem('token');
@@ -171,9 +152,6 @@ const authService = {
       );
   },
 
-  // ==========================================
-  // LOCAL AUTH HELPERS
-  // ==========================================
 
   getCurrentUser() {
     const user = localStorage.getItem('user');
@@ -209,9 +187,6 @@ const authService = {
     return localStorage.getItem('token');
   },
 
-  // ==========================================
-  // JWT
-  // ==========================================
 
   async refreshToken() {
     const response = await api.post(

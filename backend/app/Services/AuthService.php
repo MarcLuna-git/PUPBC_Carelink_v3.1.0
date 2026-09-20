@@ -19,9 +19,6 @@ class AuthService
 {
     protected UserRepositoryInterface $userRepository;
 
-    /**
-     * OTP lifetime in minutes.
-     */
     private const OTP_EXPIRY_MINUTES = 10;
 
     public function __construct(
@@ -70,9 +67,6 @@ class AuthService
         ];
     }
 
-    /**
-     * Request the first registration OTP.
-     */
     public function requestRegistrationOtp(array $data): array
     {
         if (
@@ -145,12 +139,7 @@ class AuthService
         ];
     }
 
-    /**
-     * Resend registration OTP.
-     *
-     * Generates a new OTP and replaces the old OTP hash.
-     * This automatically invalidates the previous OTP.
-     */
+    // Sa resend, papalitan ang OTP hash kaya invalid na ang lumang code.
     public function resendRegistrationOtp(string $email): array
     {
         $pending = PendingRegistration::where('email', $email)->first();
@@ -203,9 +192,6 @@ class AuthService
         ];
     }
 
-    /**
-     * Verify registration OTP.
-     */
     public function verifyRegistration(string $email, string $otp): array
     {
         return DB::transaction(function () use ($email, $otp) {
@@ -219,10 +205,7 @@ class AuthService
                 );
             }
 
-            /*
-             * Explicitly compare timestamps.
-             * This avoids incorrectly reporting a wrong OTP as expired.
-             */
+            // I-compare ang expiry timestamp para tama ang expired-OTP error.
             if (
                 !$pending->expires_at ||
                 now()->greaterThanOrEqualTo(
@@ -376,12 +359,7 @@ class AuthService
         ];
     }
 
-    /**
-     * Send password reset OTP.
-     *
-     * Calling this again acts as resend:
-     * old unused OTPs are invalidated first.
-     */
+    // Sa resend, i-invalidate muna ang dating unused OTP.
     public function forgotPassword(array $data): array
     {
         $user = $this->userRepository
@@ -450,9 +428,6 @@ class AuthService
         ];
     }
 
-    /**
-     * Reset password using latest active OTP.
-     */
     public function resetPassword(array $data): array
     {
         return DB::transaction(function () use ($data) {
@@ -611,9 +586,6 @@ class AuthService
         );
     }
 
-    /**
-     * Generate a 6-digit OTP.
-     */
     protected function generateOtp(): string
     {
         return str_pad(

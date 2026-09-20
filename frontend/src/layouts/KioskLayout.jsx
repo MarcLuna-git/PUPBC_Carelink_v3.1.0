@@ -8,7 +8,6 @@ const KioskLayout = ({ children }) => (
     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(250,204,21,0.06),transparent_50%)]" />
     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(120,0,0,0.4),transparent_50%)]" />
     
-    {/* Floating lights */}
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <motion.div 
         animate={{ x: [0, 60, 0], y: [0, -40, 0], scale: [1, 1.15, 1] }}

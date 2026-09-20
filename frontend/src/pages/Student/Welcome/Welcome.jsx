@@ -17,7 +17,6 @@ const Welcome = () => {
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 text-center">
         
-        {/* Icon */}
         <div className="w-20 h-20 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-maroon-800/20">
           <Heart className="w-10 h-10 text-white" />
         </div>
@@ -30,7 +29,6 @@ const Welcome = () => {
           This helps our clinic provide better care for you.
         </p>
 
-        {/* Steps */}
         <div className="space-y-3 mt-6 text-left">
           {steps.map((s, i) => (
             <div key={i} className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
@@ -45,7 +43,6 @@ const Welcome = () => {
           ))}
         </div>
 
-        {/* CTA */}
         <button onClick={() => navigate('/student/health-profile')}
           className="w-full mt-6 py-3.5 bg-gradient-to-r from-maroon-800 to-maroon-900 text-white font-bold rounded-2xl hover:from-maroon-900 hover:to-maroon-950 transition flex items-center justify-center space-x-2 shadow-lg shadow-maroon-800/20">
           <span>Start Health Profile</span>

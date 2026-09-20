@@ -35,9 +35,7 @@ const getLocalDateString = () => {
     .split('T')[0];
 };
 
-// Clinic appointment times are interpreted explicitly as Philippine time.
-// This avoids Safari/iPhone inconsistencies with strings such as:
-// "2026-09-19 8:00 AM"
+// PH timezone ang clinic time; explicit offset para Safari-safe.
 const parseAppointmentDateTime = (dateString, timeString) => {
   if (!dateString || !timeString) {
     return null;
@@ -65,7 +63,6 @@ const parseAppointmentDateTime = (dateString, timeString) => {
 
   const hourString = String(hour).padStart(2, '0');
 
-  // Explicit Philippines offset.
   const isoDateTime =
     `${dateString}T${hourString}:${minute}:00+08:00`;
 
@@ -830,7 +827,6 @@ const Appointments = () => {
 
   return (
     <div className="space-y-5 max-w-3xl mx-auto px-4 sm:px-0 pb-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -886,7 +882,6 @@ const Appointments = () => {
         </button>
       </div>
 
-      {/* Message */}
       <AnimatePresence>
         {message && (
           <motion.div
@@ -914,7 +909,6 @@ const Appointments = () => {
         )}
       </AnimatePresence>
 
-      {/* Book/Edit Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -1247,7 +1241,6 @@ const Appointments = () => {
         )}
       </AnimatePresence>
 
-      {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
           'all',
@@ -1277,7 +1270,6 @@ const Appointments = () => {
         )}
       </div>
 
-      {/* Appointments List */}
       <div className="space-y-3">
         {filteredAppointments.length ===
         0 ? (
@@ -1382,7 +1374,6 @@ const Appointments = () => {
         )}
       </div>
 
-      {/* Appointment Detail Modal */}
       <AnimatePresence>
         {selectedAppointment && (
           <motion.div
@@ -1754,7 +1745,6 @@ const Appointments = () => {
         )}
       </AnimatePresence>
 
-      {/* Cancel Confirmation Modal */}
       <AnimatePresence>
         {confirmCancel && (
           <motion.div

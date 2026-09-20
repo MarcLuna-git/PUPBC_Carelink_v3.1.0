@@ -50,7 +50,6 @@ const Login = () => {
     }, 10000);
 
     try {
-      // Convert birthday to YYYY-MM-DD format for backend
       let birthday = form.birthday;
       if (birthday && birthday.includes('/')) {
         const parts = birthday.split('/');
@@ -80,7 +79,6 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       
-      {/* LEFT SIDE — PUP Biñan Campus Background */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden">
         <img src={pupbg} alt="PUP Biñan Campus" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/78 via-maroon-800/72 to-maroon-950/78"></div>
@@ -144,11 +142,9 @@ const Login = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE — Login Form */}
       <div className="flex-1 flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900 lg:w-1/2 xl:w-2/5">
         <div className="w-full max-w-md">
           
-          {/* Mobile Logo */}
           <div className="flex flex-col items-center mb-8 lg:hidden">
             <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg mb-3 p-1.5">
               <img src={clinicLogo} alt="PUPBC CareLink logo" className="w-full h-full object-cover rounded-full" />
@@ -157,7 +153,6 @@ const Login = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Student Portal</p>
           </div>
 
-          {/* Form Card */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 animate-fadeInUp">
             
             <div className="mb-6">
@@ -165,7 +160,6 @@ const Login = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Login to access your student portal</p>
             </div>
 
-            {/* Error/Success Message */}
             {message && (
               <div className={`mb-4 p-3 rounded-xl text-sm text-center animate-shake ${
                 message.includes('success') ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
@@ -176,7 +170,6 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               
-              {/* Student ID */}
               <div>
                 <label className="font-semibold text-sm text-gray-700 dark:text-gray-300 pb-1 block">Student ID</label>
                 <div className="relative">
@@ -201,7 +194,6 @@ const Login = () => {
                 {errors.student_id && <p className="text-red-500 text-xs mt-1 ml-1">{errors.student_id}</p>}
               </div>
 
-              {/* Birthday */}
               <div>
                 <label className="font-semibold text-sm text-gray-700 dark:text-gray-300 pb-1 block">Birthday</label>
                 <div className="relative">
@@ -224,7 +216,6 @@ const Login = () => {
                 {errors.birthday && <p className="text-red-500 text-xs mt-1 ml-1">{errors.birthday}</p>}
               </div>
 
-              {/* Password */}
               <div>
                 <label className="font-semibold text-sm text-gray-700 dark:text-gray-300 pb-1 block">Password</label>
                 <div className="relative">
@@ -256,14 +247,12 @@ const Login = () => {
                 {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
               </div>
 
-              {/* Forgot Password */}
               <div className="flex justify-end">
                 <Link to="/forgot-password" className="text-xs font-semibold text-maroon-600 dark:text-maroon-400 hover:text-maroon-800 dark:hover:text-maroon-300 transition-colors">
                   Forgot Password?
                 </Link>
               </div>
 
-              {/* Login Button */}
               <button
                 className="w-full py-3 px-4 bg-gradient-to-r from-maroon-800 to-maroon-900 hover:from-maroon-900 hover:to-maroon-950 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
@@ -280,14 +269,12 @@ const Login = () => {
               </button>
             </form>
 
-            {/* Divider */}
             <div className="flex items-center my-6">
               <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
               <span className="px-4 text-xs text-gray-400 dark:text-gray-500 uppercase font-medium">or</span>
               <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
             </div>
 
-            {/* Register Link */}
             <div className="text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Don't have an account?{' '}
@@ -300,7 +287,6 @@ const Login = () => {
 
           </div>
 
-          {/* Back to Home */}
           <div className="text-center mt-4">
             <Link to="/" className="text-xs text-gray-400 dark:text-gray-500 hover:underline inline-flex items-center space-x-1">
               <ArrowLeft className="w-3 h-3" />

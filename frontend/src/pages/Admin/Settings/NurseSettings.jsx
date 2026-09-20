@@ -11,21 +11,18 @@ const NurseSettings = () => {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   
-  // Password form
   const [passwordForm, setPasswordForm] = useState({ 
     current_password: '', 
     new_password: '', 
     new_password_confirmation: '' 
   });
 
-  // Profile info
   const [profile, setProfile] = useState({
     first_name: user.first_name || '',
     last_name: user.last_name || '',
     email: user.email || '',
   });
 
-  // Password strength
   const getPasswordStrength = (password) => {
     let score = 0;
     if (password.length >= 8) score++;
@@ -41,14 +38,12 @@ const NurseSettings = () => {
 
   const passwordStrength = getPasswordStrength(passwordForm.new_password);
 
-  // Notification preferences
   const [notifPrefs, setNotifPrefs] = useState({
     email_notifications: true,
     appointment_alerts: true,
     new_registration_alerts: true,
   });
 
-  // System info
   const [systemInfo] = useState({
     version: '3.0.0',
     lastUpdated: 'July 2026',
@@ -109,7 +104,6 @@ const NurseSettings = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Update localStorage
       const updatedUser = { ...user, ...profile };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
@@ -156,7 +150,6 @@ const NurseSettings = () => {
         </div>
       )}
 
-      {/* Profile Section */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2 mb-4">
           <User className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
@@ -207,14 +200,12 @@ const NurseSettings = () => {
         </form>
       </div>
 
-      {/* Change Password Section */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2 mb-4">
           <Key className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
           <span>Change Password</span>
         </h3>
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          {/* Current Password */}
           <div>
             <label className={labelClass}>Current Password</label>
             <div className="relative">
@@ -234,7 +225,6 @@ const NurseSettings = () => {
             </div>
           </div>
 
-          {/* New Password */}
           <div>
             <label className={labelClass}>New Password</label>
             <div className="relative">
@@ -266,7 +256,6 @@ const NurseSettings = () => {
             )}
           </div>
 
-          {/* Confirm New Password */}
           <div>
             <label className={labelClass}>Confirm New Password</label>
             <div className="relative">
@@ -302,7 +291,6 @@ const NurseSettings = () => {
         </form>
       </div>
 
-      {/* Notification Preferences */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2 mb-4">
           <Bell className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
@@ -333,7 +321,6 @@ const NurseSettings = () => {
         </div>
       </div>
 
-      {/* System Information */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2 mb-4">
           <Building className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
@@ -359,7 +346,6 @@ const NurseSettings = () => {
         </div>
       </div>
 
-      {/* Logout Button */}
       <button 
         onClick={handleLogout}
         className="w-full py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-2xl font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition flex items-center justify-center space-x-2"

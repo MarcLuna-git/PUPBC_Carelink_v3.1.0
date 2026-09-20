@@ -1,8 +1,4 @@
 <?php
-/**
- * Supabase Region/Connection Test
- * Tests the connection to Supabase PostgreSQL database via the connection pooler.
- */
 
 $host = 'aws-0-ap-northeast-1.pooler.supabase.com';
 $port = 6543;

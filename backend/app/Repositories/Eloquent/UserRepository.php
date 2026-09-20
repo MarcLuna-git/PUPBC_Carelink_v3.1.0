@@ -8,25 +8,14 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository implements UserRepositoryInterface
 {
-    /**
-     * Create a user.
-     *
-     * If the caller provides a status, preserve it.
-     * Otherwise default to pending.
-     */
+    // Panatilihin ang supplied status; pending kung wala.
     public function create(array $data): User
     {
         $data['status'] = $data['status'] ?? 'pending';
 
         $user = User::create($data);
 
-        /*
-         * Keep the Student Profile synchronized with
-         * the registration information.
-         *
-         * updateOrCreate is used so we do not accidentally
-         * create duplicate profile rows.
-         */
+        // I-sync ang profile nang walang duplicate row.
         $user->profile()->updateOrCreate(
             [
                 'user_id' => $user->id,

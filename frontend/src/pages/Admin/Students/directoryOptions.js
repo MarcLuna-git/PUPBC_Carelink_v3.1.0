@@ -1,4 +1,4 @@
-// Values mirror Student/Register.jsx. Keep registration untouched by this directory redesign.
+// Kapareho ng values sa Student/Register.jsx; panatilihing tugma.
 export const courses = [
   ['BSIT', 'Information Technology'], ['BSCS', 'Computer Science'],
   ['BSIS', 'Information Systems'], ['BSCE', 'Civil Engineering'],

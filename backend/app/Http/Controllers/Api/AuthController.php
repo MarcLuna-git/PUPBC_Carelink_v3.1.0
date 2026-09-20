@@ -18,9 +18,6 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    /**
-     * Start student registration and send OTP.
-     */
     public function register(Request $request): JsonResponse
     {
         try {
@@ -68,9 +65,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Verify student registration OTP.
-     */
     public function verifyRegistration(Request $request): JsonResponse
     {
         try {
@@ -106,9 +100,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Resend student registration OTP.
-     */
     public function resendRegistrationOtp(Request $request): JsonResponse
     {
         try {
@@ -141,9 +132,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Student login.
-     */
     public function login(Request $request): JsonResponse
     {
         try {
@@ -181,9 +169,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Nurse login.
-     */
     public function nurseLogin(Request $request): JsonResponse
     {
         try {
@@ -223,11 +208,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Send password reset OTP.
-     *
-     * Calling this endpoint again can also act as resend.
-     */
     public function forgotPassword(Request $request): JsonResponse
     {
         try {
@@ -258,9 +238,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Reset password using OTP.
-     */
     public function resetPassword(Request $request): JsonResponse
     {
         try {
@@ -293,9 +270,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Change password for authenticated user.
-     */
     public function changePassword(Request $request): JsonResponse
     {
         try {
@@ -333,9 +307,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Logout authenticated user.
-     */
     public function logout(): JsonResponse
     {
         try {
@@ -354,9 +325,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Refresh JWT token.
-     */
     public function refresh(): JsonResponse
     {
         try {
@@ -378,9 +346,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Return currently authenticated user.
-     */
     public function me(): JsonResponse
     {
         try {

@@ -36,7 +36,6 @@ const KioskWelcome = ({ onStart }) => {
 
   return (
     <KioskLayout>
-      {/* ─── TOP RIGHT: Live Clock ─── */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
@@ -57,10 +56,8 @@ const KioskWelcome = ({ onStart }) => {
         </p>
       </motion.div>
 
-      {/* ─── MAIN CENTERED CONTENT ─── */}
       <div className="w-full max-w-4xl mx-auto text-center space-y-6 md:space-y-8 px-4">
         
-        {/* Logo Centerpiece */}
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -87,7 +84,6 @@ const KioskWelcome = ({ onStart }) => {
           </motion.div>
         </motion.div>
 
-        {/* Greeting */}
         <motion.p
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
@@ -96,7 +92,6 @@ const KioskWelcome = ({ onStart }) => {
           {greeting}
         </motion.p>
 
-        {/* Main Title */}
         <motion.div
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
@@ -109,7 +104,6 @@ const KioskWelcome = ({ onStart }) => {
           </h1>
         </motion.div>
 
-        {/* Subtitle */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35 }}
@@ -120,7 +114,6 @@ const KioskWelcome = ({ onStart }) => {
           <div className="h-px w-8 md:w-10 bg-gradient-to-l from-transparent to-yellow-400/30" />
         </motion.div>
 
-        {/* Description */}
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.45 }}
@@ -129,7 +122,6 @@ const KioskWelcome = ({ onStart }) => {
           Welcome to the PUP Biñan Campus Clinic. Use this kiosk to check in, monitor your queue, and access clinic services.
         </motion.p>
 
-        {/* Feature Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.55 }}
@@ -154,7 +146,6 @@ const KioskWelcome = ({ onStart }) => {
           ))}
         </motion.div>
 
-        {/* CTA Button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
@@ -173,7 +164,6 @@ const KioskWelcome = ({ onStart }) => {
         </motion.button>
       </div>
 
-      {/* ─── BOTTOM RIGHT: Clinic Status ─── */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}

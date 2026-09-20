@@ -110,7 +110,6 @@ const NurseConsultation = () => {
           general_remarks: '', medical_certificate: false, medical_certificate_ref: '',
           follow_up: false, follow_up_date: '',
         });
-        // Refresh checkins
         fetchCheckedInStudents();
         setTimeout(() => setMessage(''), 3000);
       }

@@ -38,25 +38,17 @@ function App() {
     <AppErrorBoundary>
       <BrowserRouter>
         <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Kiosk Self-Service Check-in */}
         <Route path="/kiosk" element={<KioskPage />} />
 
-        {/* 
-          NURSE PORTAL - Hidden Access Point
-          NOT linked anywhere on public pages.
-          Nurses/Admins should bookmark this URL directly.
-          Change this path for production deployment.
-        */}
+        {/* Hidden Nurse portal; direktang URL ang gamit, walang public link. */}
         <Route path="/carelink-portal" element={<NurseLogin />} />
 
-        {/* Student Protected Routes */}
         <Route path="/student" element={<ProtectedRoute role="student"><StudentLayout><Outlet /></StudentLayout></ProtectedRoute>}>
           <Route path="welcome" element={<Welcome />} />
           <Route path="health-profile" element={<HealthProfile />} />
@@ -73,7 +65,6 @@ function App() {
           <Route path="about" element={<About />} />
         </Route>
 
-        {/* Nurse Protected Routes */}
         <Route path="/nurse" element={<ProtectedRoute role="nurse"><AdminLayout><Outlet /></AdminLayout></ProtectedRoute>}>
           <Route path="dashboard" element={<NurseDashboard />} />
           <Route path="appointments" element={<NurseAppointments />} />
@@ -86,7 +77,6 @@ function App() {
           <Route path="settings" element={<NurseSettings />} />
         </Route>
 
-        {/* 404 - Catch all unknown routes */}
         <Route path="*" element={
           <div className="min-h-screen flex items-center justify-center bg-gray-50">
             <div className="text-center">

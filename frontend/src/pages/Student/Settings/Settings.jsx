@@ -66,7 +66,7 @@ const Settings = () => {
     e.preventDefault();
     setLoading(true); setMessage('');
     try {
-      // Email change API call would go here
+      // Wala pang email-change API call dito.
       setMessageType('success');
       setMessage('Email update request sent. Check your inbox.');
       setEmailForm({ new_email: '', password: '' });
@@ -79,8 +79,6 @@ const Settings = () => {
     }
   };
 
-  // Desktop: Show Password, Email, Appearance, Privacy (no Notifications)
-  // Mobile: Show all tabs including Notifications
   const desktopTabs = [
     { id: 'password', icon: Key, label: 'Password', desc: 'Change your password' },
     { id: 'email', icon: Mail, label: 'Email', desc: 'Update email address' },
@@ -107,7 +105,6 @@ const Settings = () => {
         </motion.div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -120,10 +117,8 @@ const Settings = () => {
         ))}
       </div>
 
-      {/* Content */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-5 lg:p-6">
         
-        {/* Password */}
         {activeTab === 'password' && (
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
@@ -186,7 +181,6 @@ const Settings = () => {
           </form>
         )}
 
-        {/* Email */}
         {activeTab === 'email' && (
           <form onSubmit={handleEmailChange} className="space-y-4">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
@@ -216,7 +210,6 @@ const Settings = () => {
           </form>
         )}
 
-        {/* Appearance */}
         {activeTab === 'appearance' && (
           <div className="space-y-4">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
@@ -244,7 +237,6 @@ const Settings = () => {
           </div>
         )}
 
-        {/* Privacy */}
         {activeTab === 'privacy' && (
           <div className="space-y-4">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">

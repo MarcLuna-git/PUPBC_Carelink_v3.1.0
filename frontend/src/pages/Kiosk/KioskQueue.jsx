@@ -23,7 +23,7 @@ const KioskQueue = ({ checkin, onDone }) => {
     try {
       const res = await api.get('/kiosk/queue');
       if (res.data.success) setQueueData(res.data.data);
-    } catch (err) { /* silent */ }
+    } catch (err) {   }
   };
 
   const position = queueData?.queue?.findIndex(q => q.id === checkin.id) ?? -1;
@@ -35,7 +35,6 @@ const KioskQueue = ({ checkin, onDone }) => {
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg mx-auto text-center">
         
-        {/* Success */}
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }}
           className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500/30">
           <CheckCircle className="w-10 h-10 text-green-400" />
@@ -44,7 +43,6 @@ const KioskQueue = ({ checkin, onDone }) => {
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Checked In!</h1>
         <p className="text-white/40 mb-8">Please wait for your number to be called</p>
 
-        {/* Queue Number */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200, delay: 0.4 }}
@@ -63,7 +61,6 @@ const KioskQueue = ({ checkin, onDone }) => {
           </span>
         </motion.div>
 
-        {/* Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
             <User className="w-5 h-5 text-yellow-400/60 mx-auto mb-1" />
@@ -82,7 +79,6 @@ const KioskQueue = ({ checkin, onDone }) => {
           </div>
         </div>
 
-        {/* Now Serving */}
         {queueData?.now_serving && (
           <div className="bg-green-500/5 backdrop-blur-xl rounded-2xl p-4 mb-6 border border-green-500/20 flex items-center justify-between">
             <span className="text-green-400 text-sm font-semibold">NOW SERVING</span>
@@ -90,7 +86,6 @@ const KioskQueue = ({ checkin, onDone }) => {
           </div>
         )}
 
-        {/* Auto-reset countdown */}
         <p className="text-white/15 text-xs mb-4">
           Screen resets in {countdown}s
         </p>

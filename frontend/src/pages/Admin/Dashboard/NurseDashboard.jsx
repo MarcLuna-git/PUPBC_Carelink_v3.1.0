@@ -10,7 +10,6 @@ const NurseDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Real data from API
   const [stats, setStats] = useState({
     todayAppointments: 0,
     confirmedAppointments: 0,
@@ -97,7 +96,6 @@ const NurseDashboard = () => {
       console.log('Notifications error:', err);
     }
     
-    // Fetch notifications
     try {
       const token = localStorage.getItem('token');
       const response = await api.get('/notifications', {
@@ -167,7 +165,6 @@ const NurseDashboard = () => {
   return (
     <div className="space-y-5">
       
-      {/* Welcome Card */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-maroon-800 to-maroon-900 dark:from-maroon-900 dark:to-maroon-950 rounded-3xl p-5 lg:p-6 text-white shadow-xl shadow-maroon-800/20">
         <div className="flex items-center justify-between">
@@ -189,7 +186,6 @@ const NurseDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summaryCards.map((card, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
@@ -210,10 +206,8 @@ const NurseDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-5">
           
-          {/* Quick Actions */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700">
             <h3 className="font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -229,7 +223,6 @@ const NurseDashboard = () => {
             </div>
           </div>
 
-          {/* Today's Schedule */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700">
             <h3 className="font-bold text-gray-900 dark:text-white mb-4">Today's Schedule</h3>
             {todaySchedule.length === 0 ? (
@@ -253,10 +246,8 @@ const NurseDashboard = () => {
           </div>
         </div>
 
-        {/* Right Sidebar */}
         <div className="space-y-5">
           
-          {/* Recent Activity */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700">
             <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
               <Activity className="w-5 h-5 text-maroon-800 dark:text-maroon-400" />
@@ -279,7 +270,6 @@ const NurseDashboard = () => {
             )}
           </div>
 
-          {/* Notifications */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">

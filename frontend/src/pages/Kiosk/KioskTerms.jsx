@@ -48,7 +48,6 @@ const KioskTerms = ({ onAgree, onDecline, onBack }) => {
         transition={{ duration: 0.6 }}
         className="w-full max-w-3xl mx-auto">
         
-        {/* Header */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -61,7 +60,6 @@ const KioskTerms = ({ onAgree, onDecline, onBack }) => {
           <p className="text-white/40 text-base">Please review our policies before proceeding</p>
         </div>
 
-        {/* Policy Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
           {policies.map((policy, i) => (
             <motion.div
@@ -81,7 +79,6 @@ const KioskTerms = ({ onAgree, onDecline, onBack }) => {
           ))}
         </div>
 
-        {/* Acceptance */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -105,7 +102,6 @@ const KioskTerms = ({ onAgree, onDecline, onBack }) => {
           </div>
         </motion.div>
 
-        {/* Buttons */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
