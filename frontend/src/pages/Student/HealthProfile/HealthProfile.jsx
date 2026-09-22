@@ -8,6 +8,17 @@ const Skeleton = ({ className = '' }) => (
   <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl ${className}`} />
 );
 
+const getManilaDateString = () => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
 const HealthProfile = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -38,7 +49,7 @@ const HealthProfile = () => {
     abortion: false, living_children: false,
     family_history: [],
     consent_signature: '', agree_privacy: false, agree_terms: false,
-    consent_date: new Date().toISOString().split('T')[0],
+    consent_date: getManilaDateString(),
   });
 
   const [errors, setErrors] = useState({});
@@ -140,8 +151,8 @@ const HealthProfile = () => {
         window.dispatchEvent(new Event('storage'));
         window.dispatchEvent(new CustomEvent('healthProfileUpdated'));
         setMessageType('success');
-        setMessage('Health Profile completed! Redirecting to dashboard...');
-        setTimeout(() => navigate('/student/dashboard'), 1500);
+        setMessage('Health Profile completed! Redirecting to appointments...');
+        setTimeout(() => navigate('/student/appointments'), 1500);
       }
     } catch (err) {
       setMessageType('error');
@@ -341,7 +352,7 @@ const HealthProfile = () => {
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center space-x-2"><Check className="w-5 h-5 text-maroon-800 dark:text-maroon-400" /><span>Consent & Signature</span></h3>
                 <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 rounded-2xl p-4 text-xs text-yellow-700 dark:text-yellow-400 leading-relaxed"><strong>Important:</strong> I certify that all information is true. I consent to data processing per RA 10173.</div>
                 <div><label className={labelClass}>Full Name (Electronic Signature) <span className="text-red-400">*</span></label><input className={inputClass('consent_signature')} name="consent_signature" value={form.consent_signature} onChange={handleChange} placeholder="Type your full name" maxLength={100} />{errors.consent_signature && <p className={errorClass}>{errors.consent_signature}</p>}</div>
-                <div><label className={labelClass}>Date</label><input className={inputClass('consent_date')} value={form.consent_date} disabled className="bg-gray-50 dark:bg-gray-600 text-gray-500 cursor-not-allowed" /></div>
+                <div><label className={labelClass}>Date</label><input className={`${inputClass('consent_date')} bg-gray-50 dark:bg-gray-600 text-gray-500 cursor-not-allowed`} value={form.consent_date} disabled /></div>
                 <div className="flex items-start space-x-2"><input type="checkbox" name="agree_privacy" checked={form.agree_privacy} onChange={handleChange} className="mt-1 w-4 h-4 rounded accent-maroon-800 flex-shrink-0" /><span className="text-xs text-gray-500 dark:text-gray-400">I agree to the <span className="text-maroon-600 dark:text-maroon-400 underline">Privacy Policy</span> <span className="text-red-400">*</span></span></div>{errors.agree_privacy && <p className={errorClass}>{errors.agree_privacy}</p>}
                 <div className="flex items-start space-x-2"><input type="checkbox" name="agree_terms" checked={form.agree_terms} onChange={handleChange} className="mt-1 w-4 h-4 rounded accent-maroon-800 flex-shrink-0" /><span className="text-xs text-gray-500 dark:text-gray-400">I agree to the <span className="text-maroon-600 dark:text-maroon-400 underline">Terms of Service</span> <span className="text-red-400">*</span></span></div>{errors.agree_terms && <p className={errorClass}>{errors.agree_terms}</p>}
               </div>

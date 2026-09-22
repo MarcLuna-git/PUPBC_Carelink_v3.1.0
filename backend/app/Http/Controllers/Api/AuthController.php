@@ -6,11 +6,66 @@ use App\Http\Controllers\Controller;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     protected AuthService $authService;
+
+    private const ALLOWED_COURSES = [
+        'BSIT',
+        'BSCPE',
+        'BSIE',
+        'BSBA-HRM',
+        'BSED-SS',
+        'BSED-English',
+        'BEED',
+        'BSPSYCH',
+        'DIT',
+        'DCET',
+    ];
+
+    private const ALLOWED_YEARS = [
+        '1st Year',
+        '2nd Year',
+        '3rd Year',
+        '4th Year',
+    ];
+
+    private const SECTIONS_BY_YEAR = [
+        '1st Year' => [
+            '1-1',
+            '1-2',
+            '1-3',
+            '1-4',
+            '1-5',
+        ],
+
+        '2nd Year' => [
+            '2-1',
+            '2-2',
+            '2-3',
+            '2-4',
+            '2-5',
+        ],
+
+        '3rd Year' => [
+            '3-1',
+            '3-2',
+            '3-3',
+            '3-4',
+            '3-5',
+        ],
+
+        '4th Year' => [
+            '4-1',
+            '4-2',
+            '4-3',
+            '4-4',
+            '4-5',
+        ],
+    ];
 
     public function __construct(
         AuthService $authService
@@ -21,26 +76,186 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         try {
-            $data = $request->validate([
-                'student_id' => 'required|string|max:50',
-                'first_name' => 'required|string|max:100',
-                'middle_name' => 'nullable|string|max:100',
-                'last_name' => 'required|string|max:100',
+            $this->normalizeRegistrationInput($request);
 
-                'email' => 'required|email|max:255',
+            $selectedYear = $request->input('year');
 
-                'password' => 'required|string|min:8|confirmed',
+            $allowedSections =
+                self::SECTIONS_BY_YEAR[$selectedYear] ?? [];
 
-                'birthday' => 'required|date_format:Y-m-d|before_or_equal:today',
+            $data = $request->validate(
+                [
+                    'student_id' => [
+                        'required',
+                        'string',
+                        'max:17',
+                        'regex:/^\d{4}-\d{5}-BN-[01]$/',
+                    ],
 
-                'gender' => 'required|string|max:50',
+                    'first_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        'regex:/^[\pL\s\-\'.]+$/u',
+                    ],
 
-                'course' => 'required|string|max:255',
-                'year' => 'required|string|max:50',
-                'section' => 'required|string|max:100',
+                    'middle_name' => [
+                        'nullable',
+                        'string',
+                        'max:100',
+                        'regex:/^[\pL\s\-\'.]+$/u',
+                    ],
 
-                'mobile_number' => 'required|string|max:30',
-            ]);
+                    'last_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        'regex:/^[\pL\s\-\'.]+$/u',
+                    ],
+
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+
+                    'password' => [
+                        'required',
+                        'string',
+                        'min:8',
+                        'confirmed',
+                    ],
+
+                    'birthday' => [
+                        'required',
+                        'date_format:Y-m-d',
+                        'before_or_equal:today',
+                    ],
+
+                    'gender' => [
+                        'required',
+                        'string',
+                        Rule::in([
+                            'male',
+                            'female',
+                            'other',
+                        ]),
+                    ],
+
+                    'course' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        Rule::in(
+                            self::ALLOWED_COURSES
+                        ),
+                    ],
+
+                    'year' => [
+                        'required',
+                        'string',
+                        'max:10',
+                        Rule::in(
+                            self::ALLOWED_YEARS
+                        ),
+                    ],
+
+                    'section' => [
+                        'required',
+                        'string',
+                        'max:10',
+                        Rule::in(
+                            $allowedSections
+                        ),
+                    ],
+
+                    'mobile_number' => [
+                        'required',
+                        'string',
+                        'max:13',
+                        'regex:/^\+639\d{9}$/',
+                    ],
+                ],
+                [
+                    'student_id.required' =>
+                        'Student ID is required.',
+
+                    'student_id.regex' =>
+                        'Student ID must follow the format 2023-00000-BN-0.',
+
+                    'student_id.max' =>
+                        'Student ID format is invalid.',
+
+                    'first_name.required' =>
+                        'First name is required.',
+
+                    'first_name.regex' =>
+                        'First name may contain letters, spaces, apostrophes, periods, and hyphens only.',
+
+                    'middle_name.regex' =>
+                        'Middle name may contain letters, spaces, apostrophes, periods, and hyphens only.',
+
+                    'last_name.required' =>
+                        'Last name is required.',
+
+                    'last_name.regex' =>
+                        'Last name may contain letters, spaces, apostrophes, periods, and hyphens only.',
+
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+
+                    'password.required' =>
+                        'Password is required.',
+
+                    'password.min' =>
+                        'Password must be at least 8 characters.',
+
+                    'password.confirmed' =>
+                        'Password confirmation does not match.',
+
+                    'birthday.required' =>
+                        'Birthday is required.',
+
+                    'birthday.date_format' =>
+                        'Birthday format is invalid.',
+
+                    'birthday.before_or_equal' =>
+                        'Birthday cannot be in the future.',
+
+                    'gender.required' =>
+                        'Gender is required.',
+
+                    'gender.in' =>
+                        'Please select a valid gender.',
+
+                    'course.required' =>
+                        'Course is required.',
+
+                    'course.in' =>
+                        'Please select a valid course.',
+
+                    'year.required' =>
+                        'Year level is required.',
+
+                    'year.in' =>
+                        'Please select a valid year level.',
+
+                    'section.required' =>
+                        'Section is required.',
+
+                    'section.in' =>
+                        'Please select a valid section for your year level.',
+
+                    'mobile_number.required' =>
+                        'Mobile number is required.',
+
+                    'mobile_number.regex' =>
+                        'Mobile number must use 09XXXXXXXXX or +639XXXXXXXXX format.',
+                ]
+            );
 
             $result = $this->authService
                 ->requestRegistrationOtp($data);
@@ -65,13 +280,44 @@ class AuthController extends Controller
         }
     }
 
-    public function verifyRegistration(Request $request): JsonResponse
-    {
+    public function verifyRegistration(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'email' => 'required|email',
-                'otp' => 'required|string|size:6',
-            ]);
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+
+                    'otp' => [
+                        'required',
+                        'string',
+                        'size:6',
+                        'regex:/^\d{6}$/',
+                    ],
+                ],
+                [
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+
+                    'otp.required' =>
+                        'Verification code is required.',
+
+                    'otp.size' =>
+                        'Verification code must contain 6 digits.',
+
+                    'otp.regex' =>
+                        'Verification code must contain numbers only.',
+                ]
+            );
 
             $result = $this->authService
                 ->verifyRegistration(
@@ -100,12 +346,28 @@ class AuthController extends Controller
         }
     }
 
-    public function resendRegistrationOtp(Request $request): JsonResponse
-    {
+    public function resendRegistrationOtp(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'email' => 'required|email',
-            ]);
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+                ],
+                [
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+                ]
+            );
 
             $result = $this->authService
                 ->resendRegistrationOtp(
@@ -135,11 +397,57 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         try {
-            $data = $request->validate([
-                'student_id' => 'required|string',
-                'birthday' => 'required|date_format:Y-m-d',
-                'password' => 'required|string',
+            $request->merge([
+                'student_id' => strtoupper(
+                    trim(
+                        (string) $request->input(
+                            'student_id',
+                            ''
+                        )
+                    )
+                ),
             ]);
+
+            $data = $request->validate(
+                [
+                    'student_id' => [
+                        'required',
+                        'string',
+                        'max:17',
+                        'regex:/^\d{4}-\d{5}-BN-[01]$/',
+                    ],
+
+                    'birthday' => [
+                        'required',
+                        'date_format:Y-m-d',
+                        'before_or_equal:today',
+                    ],
+
+                    'password' => [
+                        'required',
+                        'string',
+                    ],
+                ],
+                [
+                    'student_id.required' =>
+                        'Student ID is required.',
+
+                    'student_id.regex' =>
+                        'Student ID format is invalid.',
+
+                    'birthday.required' =>
+                        'Birthday is required.',
+
+                    'birthday.date_format' =>
+                        'Birthday format is invalid.',
+
+                    'birthday.before_or_equal' =>
+                        'Birthday cannot be in the future.',
+
+                    'password.required' =>
+                        'Password is required.',
+                ]
+            );
 
             $result = $this->authService
                 ->login($data);
@@ -169,13 +477,36 @@ class AuthController extends Controller
         }
     }
 
-    public function nurseLogin(Request $request): JsonResponse
-    {
+    public function nurseLogin(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
-            ]);
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+
+                    'password' => [
+                        'required',
+                        'string',
+                    ],
+                ],
+                [
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+
+                    'password.required' =>
+                        'Password is required.',
+                ]
+            );
 
             $result = $this->authService
                 ->nurseLogin(
@@ -208,12 +539,28 @@ class AuthController extends Controller
         }
     }
 
-    public function forgotPassword(Request $request): JsonResponse
-    {
+    public function forgotPassword(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'email' => 'required|email',
-            ]);
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+                ],
+                [
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+                ]
+            );
 
             $result = $this->authService
                 ->forgotPassword($data);
@@ -238,14 +585,60 @@ class AuthController extends Controller
         }
     }
 
-    public function resetPassword(Request $request): JsonResponse
-    {
+    public function resetPassword(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'email' => 'required|email',
-                'otp' => 'required|string|size:6',
-                'password' => 'required|string|min:8|confirmed',
-            ]);
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:255',
+                    ],
+
+                    'otp' => [
+                        'required',
+                        'string',
+                        'size:6',
+                        'regex:/^\d{6}$/',
+                    ],
+
+                    'password' => [
+                        'required',
+                        'string',
+                        'min:8',
+                        'confirmed',
+                    ],
+                ],
+                [
+                    'email.required' =>
+                        'Email address is required.',
+
+                    'email.email' =>
+                        'Please enter a valid email address.',
+
+                    'otp.required' =>
+                        'Verification code is required.',
+
+                    'otp.size' =>
+                        'Verification code must contain 6 digits.',
+
+                    'otp.regex' =>
+                        'Verification code must contain numbers only.',
+
+                    'password.required' =>
+                        'Password is required.',
+
+                    'password.min' =>
+                        'Password must be at least 8 characters.',
+
+                    'password.confirmed' =>
+                        'Password confirmation does not match.',
+                ]
+            );
 
             $result = $this->authService
                 ->resetPassword($data);
@@ -270,19 +663,38 @@ class AuthController extends Controller
         }
     }
 
-    public function changePassword(Request $request): JsonResponse
-    {
+    public function changePassword(
+        Request $request
+    ): JsonResponse {
         try {
-            $data = $request->validate([
-                'current_password' => 'required|string',
+            $data = $request->validate(
+                [
+                    'current_password' => [
+                        'required',
+                        'string',
+                    ],
 
-                'new_password' => [
-                    'required',
-                    'string',
-                    'min:8',
-                    'confirmed',
+                    'new_password' => [
+                        'required',
+                        'string',
+                        'min:8',
+                        'confirmed',
+                    ],
                 ],
-            ]);
+                [
+                    'current_password.required' =>
+                        'Current password is required.',
+
+                    'new_password.required' =>
+                        'New password is required.',
+
+                    'new_password.min' =>
+                        'New password must be at least 8 characters.',
+
+                    'new_password.confirmed' =>
+                        'New password confirmation does not match.',
+                ]
+            );
 
             $result = $this->authService
                 ->changePassword($data);
@@ -363,5 +775,137 @@ class AuthController extends Controller
                 'message' => 'Unauthenticated.',
             ], 401);
         }
+    }
+
+    private function normalizeRegistrationInput(
+        Request $request
+    ): void {
+        $mobileNumber = preg_replace(
+            '/\s+/',
+            '',
+            trim(
+                (string) $request->input(
+                    'mobile_number',
+                    ''
+                )
+            )
+        );
+
+        if (
+            preg_match(
+                '/^09\d{9}$/',
+                $mobileNumber
+            )
+        ) {
+            $mobileNumber =
+                '+63' .
+                substr(
+                    $mobileNumber,
+                    1
+                );
+        } elseif (
+            preg_match(
+                '/^639\d{9}$/',
+                $mobileNumber
+            )
+        ) {
+            $mobileNumber =
+                '+' .
+                $mobileNumber;
+        }
+
+        $middleName = trim(
+            (string) $request->input(
+                'middle_name',
+                ''
+            )
+        );
+
+        $request->merge([
+            'student_id' => strtoupper(
+                trim(
+                    (string) $request->input(
+                        'student_id',
+                        ''
+                    )
+                )
+            ),
+
+            'first_name' => trim(
+                (string) $request->input(
+                    'first_name',
+                    ''
+                )
+            ),
+
+            'middle_name' =>
+                $middleName === ''
+                    ? null
+                    : $middleName,
+
+            'last_name' => trim(
+                (string) $request->input(
+                    'last_name',
+                    ''
+                )
+            ),
+
+            'email' => strtolower(
+                trim(
+                    (string) $request->input(
+                        'email',
+                        ''
+                    )
+                )
+            ),
+
+            'mobile_number' =>
+                $mobileNumber,
+
+            'course' => trim(
+                (string) $request->input(
+                    'course',
+                    ''
+                )
+            ),
+
+            'year' => trim(
+                (string) $request->input(
+                    'year',
+                    ''
+                )
+            ),
+
+            'section' => trim(
+                (string) $request->input(
+                    'section',
+                    ''
+                )
+            ),
+
+            'gender' => strtolower(
+                trim(
+                    (string) $request->input(
+                        'gender',
+                        ''
+                    )
+                )
+            ),
+        ]);
+    }
+
+    private function normalizeEmailInput(
+        Request $request
+    ): void {
+        $request->merge([
+            'email' => strtolower(
+                trim(
+                    (string) $request->input(
+                        'email',
+                        ''
+                    )
+                )
+            ),
+        ]);
     }
 }

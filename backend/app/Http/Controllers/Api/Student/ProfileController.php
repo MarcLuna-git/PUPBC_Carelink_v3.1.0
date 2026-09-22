@@ -12,12 +12,13 @@ class ProfileController extends Controller
     public function show()
     {
         $user = auth()->user()->load('profile');
+        $profile = $this->profileData($user->profile);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => $user,
-                'profile' => $user->profile,
+                'profile' => $profile,
             ],
         ]);
     }
@@ -54,7 +55,7 @@ class ProfileController extends Controller
             'message' => 'Profile updated successfully.',
             'data' => [
                 'user' => $user->fresh()->load('profile'),
-                'profile' => $profile->fresh(),
+                'profile' => $this->profileData($profile->fresh()),
             ],
         ]);
     }
@@ -82,5 +83,21 @@ class ProfileController extends Controller
                 'profile_picture' => Storage::disk('public')->url($path),
             ],
         ]);
+    }
+
+    private function profileData(?StudentProfile $profile): ?array
+    {
+        if (!$profile) {
+            return null;
+        }
+
+        $data = $profile->toArray();
+
+        if ($profile->profile_picture) {
+            $data['profile_picture'] = Storage::disk('public')
+                ->url($profile->profile_picture);
+        }
+
+        return $data;
     }
 }

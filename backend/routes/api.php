@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Student\HealthProfileController;
 use App\Http\Controllers\Api\Student\AppointmentController as StudentAppointmentController;
 use App\Http\Controllers\Api\Student\ConsultationController as StudentConsultationController;
 use App\Http\Controllers\Api\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Api\Student\NotificationController as StudentNotificationController;
 
 use App\Http\Controllers\Api\Nurse\AppointmentController as NurseAppointmentController;
 use App\Http\Controllers\Api\Nurse\ConsultationController as NurseConsultationController;
@@ -23,10 +24,7 @@ use App\Http\Controllers\Api\Kiosk\CheckinController;
 use App\Http\Controllers\Api\Kiosk\KioskController;
 
 
-
-
 Route::get('/health', function () {
-
     $database = 'down';
     $databaseError = null;
 
@@ -49,24 +47,20 @@ Route::get('/health', function () {
 });
 
 
-
 Route::get('/test', function () {
-
     return response()->json([
         'success' => true,
         'message' => 'PUPBC CareLink API is working!',
         'version' => '1.0.0',
         'timestamp' => now()->toDateTimeString(),
     ]);
-
 });
-
 
 
 Route::prefix('kiosk')
     ->middleware([
         'kiosk.device',
-        'throttle:120,1'
+        'throttle:120,1',
     ])
     ->group(function () {
 
@@ -102,14 +96,12 @@ Route::prefix('kiosk')
     });
 
 
-
 Route::prefix('auth')
     ->middleware([
         'jwt.configured',
-        'throttle:10,1'
+        'throttle:10,1',
     ])
     ->group(function () {
-
 
         Route::post(
             '/register',
@@ -126,14 +118,10 @@ Route::prefix('auth')
             [AuthController::class, 'resendRegistrationOtp']
         );
 
-
-
         Route::post(
             '/login',
             [AuthController::class, 'login']
         );
-
-
 
         Route::post(
             '/forgot-password',
@@ -145,21 +133,17 @@ Route::prefix('auth')
             [AuthController::class, 'resetPassword']
         );
 
-
-
         Route::post(
             '/nurse-login',
             [AuthController::class, 'nurseLogin']
         );
 
         // Legacy admin-login alias ito; Nurse accounts lang ang puwede.
-
         Route::post(
             '/admin-login',
             [AuthController::class, 'nurseLogin']
         );
     });
-
 
 
 Route::middleware('throttle:60,1')
@@ -177,15 +161,12 @@ Route::middleware('throttle:60,1')
     });
 
 
-
 Route::middleware([
     'jwt.configured',
     'auth:api',
-    'throttle:60,1'
+    'throttle:60,1',
 ])
     ->group(function () {
-
-
 
         Route::prefix('auth')
             ->group(function () {
@@ -212,12 +193,21 @@ Route::middleware([
             });
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Shared Notifications
+        |--------------------------------------------------------------------------
+        |
+        | Keep this block for existing compatibility.
+        | Student-specific notification endpoints are defined inside
+        | the /student group below.
+        |
+        */
 
         Route::prefix('notifications')
             ->group(function () {
 
                 Route::get('/', function (Request $request) {
-
                     $notifications =
                         \App\Models\Notification::where(
                             'user_id',
@@ -235,11 +225,9 @@ Route::middleware([
                     ]);
                 });
 
-
                 Route::patch(
                     '/{id}/read',
                     function ($id) {
-
                         \App\Models\Notification::where(
                             'id',
                             $id
@@ -260,11 +248,9 @@ Route::middleware([
                     }
                 );
 
-
                 Route::patch(
                     '/read-all',
                     function () {
-
                         \App\Models\Notification::where(
                             'user_id',
                             auth()->id()
@@ -283,17 +269,68 @@ Route::middleware([
             });
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Student Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::prefix('student')
             ->middleware('student')
             ->group(function () {
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student Notifications
+                |--------------------------------------------------------------------------
+                */
 
+                Route::prefix('notifications')
+                    ->group(function () {
+
+                        Route::get(
+                            '/',
+                            [
+                                StudentNotificationController::class,
+                                'index',
+                            ]
+                        );
+
+                        Route::patch(
+                            '/read-all',
+                            [
+                                StudentNotificationController::class,
+                                'markAllAsRead',
+                            ]
+                        );
+
+                        Route::patch(
+                            '/{id}/read',
+                            [
+                                StudentNotificationController::class,
+                                'markAsRead',
+                            ]
+                        );
+
+                        Route::delete(
+                            '/{id}',
+                            [
+                                StudentNotificationController::class,
+                                'destroy',
+                            ]
+                        );
+                    });
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Student Clinic History
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/clinic-history',
                     function () {
-
                         return response()->json([
                             'success' => true,
                             'data' =>
@@ -309,6 +346,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student Profile
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/profile',
@@ -326,6 +368,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student Health Profile
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/health-profile',
@@ -348,6 +395,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student Appointments
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/appointments',
@@ -359,34 +411,53 @@ Route::middleware([
                     [StudentAppointmentController::class, 'store']
                 );
 
-                // Unahin ang specific routes para hindi maging appointment ID ang check-duplicate.
-
+                // Unahin ang specific route bago appointments/{id}.
                 Route::get(
                     '/appointments/check-duplicate',
-                    [StudentAppointmentController::class, 'checkDuplicate']
+                    [
+                        StudentAppointmentController::class,
+                        'checkDuplicate',
+                    ]
                 );
 
                 Route::get(
                     '/available-slots',
-                    [StudentAppointmentController::class, 'availableSlots']
+                    [
+                        StudentAppointmentController::class,
+                        'availableSlots',
+                    ]
                 );
 
                 Route::put(
                     '/appointments/{id}',
-                    [StudentAppointmentController::class, 'update']
+                    [
+                        StudentAppointmentController::class,
+                        'update',
+                    ]
                 );
 
                 Route::patch(
                     '/appointments/{id}/cancel',
-                    [StudentAppointmentController::class, 'cancel']
+                    [
+                        StudentAppointmentController::class,
+                        'cancel',
+                    ]
                 );
 
                 Route::get(
                     '/appointments/{id}',
-                    [StudentAppointmentController::class, 'show']
+                    [
+                        StudentAppointmentController::class,
+                        'show',
+                    ]
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student Consultations / Health Records
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/consultations',
@@ -404,6 +475,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Student QR
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/qr',
@@ -416,6 +492,15 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Legacy Student Dashboard APIs
+                |--------------------------------------------------------------------------
+                |
+                | Dashboard UI is no longer part of active Student navigation,
+                | but these APIs remain for compatibility.
+                |
+                */
 
                 Route::get(
                     '/dashboard-stats',
@@ -424,28 +509,37 @@ Route::middleware([
 
                 Route::get(
                     '/upcoming-appointments',
-                    [StudentDashboardController::class, 'upcomingAppointments']
+                    [
+                        StudentDashboardController::class,
+                        'upcomingAppointments',
+                    ]
                 );
 
                 Route::get(
                     '/recent-consultations',
-                    [StudentDashboardController::class, 'recentConsultations']
+                    [
+                        StudentDashboardController::class,
+                        'recentConsultations',
+                    ]
                 );
             });
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Nurse Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::prefix('nurse')
             ->middleware('nurse')
             ->group(function () {
 
-
-
                 Route::put(
                     '/profile',
                     [
                         \App\Http\Controllers\Api\Nurse\ProfileController::class,
-                        'update'
+                        'update',
                     ]
                 );
 
@@ -455,11 +549,9 @@ Route::middleware([
                 );
 
 
-
                 Route::get(
                     '/clinic-history',
                     function () {
-
                         return response()->json([
                             'success' => true,
                             'data' =>
@@ -472,6 +564,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Dashboard
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/dashboard-stats',
@@ -480,15 +577,26 @@ Route::middleware([
 
                 Route::get(
                     '/dashboard/appointments-today',
-                    [NurseDashboardController::class, 'appointmentsToday']
+                    [
+                        NurseDashboardController::class,
+                        'appointmentsToday',
+                    ]
                 );
 
                 Route::get(
                     '/dashboard/recent-activity',
-                    [NurseDashboardController::class, 'recentActivity']
+                    [
+                        NurseDashboardController::class,
+                        'recentActivity',
+                    ]
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Queue
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/queue/today',
@@ -506,50 +614,80 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Appointments
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/appointments',
                     [NurseAppointmentController::class, 'index']
                 );
 
-                // Unahin ang specific GET routes bago ang appointments/{id}.
-
+                // Unahin ang specific GET routes bago appointments/{id}.
                 Route::get(
                     '/appointments/filter/{status}',
-                    [NurseAppointmentController::class, 'filterByStatus']
+                    [
+                        NurseAppointmentController::class,
+                        'filterByStatus',
+                    ]
                 );
 
                 Route::get(
                     '/appointments/date/{date}',
-                    [NurseAppointmentController::class, 'filterByDate']
+                    [
+                        NurseAppointmentController::class,
+                        'filterByDate',
+                    ]
                 );
 
                 Route::patch(
                     '/appointments/{id}/approve',
-                    [NurseAppointmentController::class, 'approve']
+                    [
+                        NurseAppointmentController::class,
+                        'approve',
+                    ]
                 );
 
                 Route::patch(
                     '/appointments/{id}/reject',
-                    [NurseAppointmentController::class, 'reject']
+                    [
+                        NurseAppointmentController::class,
+                        'reject',
+                    ]
                 );
 
                 Route::patch(
                     '/appointments/{id}/reschedule',
-                    [NurseAppointmentController::class, 'reschedule']
+                    [
+                        NurseAppointmentController::class,
+                        'reschedule',
+                    ]
                 );
 
                 Route::patch(
                     '/appointments/{id}/complete',
-                    [NurseAppointmentController::class, 'complete']
+                    [
+                        NurseAppointmentController::class,
+                        'complete',
+                    ]
                 );
 
                 Route::get(
                     '/appointments/{id}',
-                    [NurseAppointmentController::class, 'show']
+                    [
+                        NurseAppointmentController::class,
+                        'show',
+                    ]
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Student Directory
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/students',
@@ -563,27 +701,42 @@ Route::middleware([
 
                 Route::get(
                     '/students/{id}/health-profile',
-                    [NurseStudentController::class, 'healthProfile']
+                    [
+                        NurseStudentController::class,
+                        'healthProfile',
+                    ]
                 );
 
                 Route::get(
                     '/students/{id}/appointments',
-                    [NurseStudentController::class, 'appointments']
+                    [
+                        NurseStudentController::class,
+                        'appointments',
+                    ]
                 );
 
                 Route::get(
                     '/students/{id}/consultations',
-                    [NurseStudentController::class, 'consultations']
+                    [
+                        NurseStudentController::class,
+                        'consultations',
+                    ]
                 );
 
                 Route::get(
                     '/students/{id}/emergency-encounters',
-                    [NurseStudentController::class, 'emergencyEncounters']
+                    [
+                        NurseStudentController::class,
+                        'emergencyEncounters',
+                    ]
                 );
 
                 Route::get(
                     '/students/{id}/clinic-history',
-                    [NurseStudentController::class, 'clinicHistory']
+                    [
+                        NurseStudentController::class,
+                        'clinicHistory',
+                    ]
                 );
 
                 Route::get(
@@ -592,6 +745,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Consultations
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/consultations',
@@ -605,12 +763,18 @@ Route::middleware([
 
                 Route::get(
                     '/consultations/today',
-                    [NurseConsultationController::class, 'todayConsultations']
+                    [
+                        NurseConsultationController::class,
+                        'todayConsultations',
+                    ]
                 );
 
                 Route::get(
                     '/consultations/filter/{date}',
-                    [NurseConsultationController::class, 'filterByDate']
+                    [
+                        NurseConsultationController::class,
+                        'filterByDate',
+                    ]
                 );
 
                 Route::put(
@@ -624,13 +788,26 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Emergency Encounters
+                |--------------------------------------------------------------------------
+                */
 
                 Route::post(
                     '/emergency-encounters',
-                    [EmergencyEncounterController::class, 'store']
+                    [
+                        EmergencyEncounterController::class,
+                        'store',
+                    ]
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Medicines
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/medicines/stats',
@@ -678,6 +855,11 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Nurse Announcements
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/announcements',
@@ -705,31 +887,42 @@ Route::middleware([
                 );
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Reports
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     '/reports/consultations',
-                    [NurseDashboardController::class, 'consultationReport']
+                    [
+                        NurseDashboardController::class,
+                        'consultationReport',
+                    ]
                 );
 
                 Route::get(
                     '/reports/appointments',
-                    [NurseDashboardController::class, 'appointmentReport']
+                    [
+                        NurseDashboardController::class,
+                        'appointmentReport',
+                    ]
                 );
 
                 Route::get(
                     '/reports/daily-summary',
-                    [NurseDashboardController::class, 'dailySummary']
+                    [
+                        NurseDashboardController::class,
+                        'dailySummary',
+                    ]
                 );
             });
     });
 
 
-
 Route::fallback(function () {
-
     return response()->json([
         'success' => false,
         'message' => 'API endpoint not found.',
     ], 404);
-
 });

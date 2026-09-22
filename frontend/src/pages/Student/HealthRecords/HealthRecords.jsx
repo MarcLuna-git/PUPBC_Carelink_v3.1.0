@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, FileText, Calendar, User, Loader2, Stethoscope, Pill, ClipboardList, ChevronDown, ChevronUp, Filter, X, Download } from 'lucide-react';
+import { Search, FileText, Calendar, User, Stethoscope, ClipboardList, ChevronDown, ChevronUp, Filter, X, RefreshCw } from 'lucide-react';
 import api from '../../../services/api';
 
 const Skeleton = ({ className = '' }) => (
@@ -23,6 +23,7 @@ const HealthRecords = () => {
   const fetchRecords = async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('token');
       const response = await api.get('/student/clinic-history', {
         headers: { Authorization: `Bearer ${token}` }
@@ -34,10 +35,22 @@ const HealthRecords = () => {
         const formatted = consultations.map((c, index) => ({
           id: `${c.record_type}-${c.id || index}`,
           date: c.occurred_at,
-          diagnosis: (c.record_type === 'emergency' ? 'Emergency: ' : '') + (c.reason || c.chief_complaint || 'Consultation'),
-          treatment: c.intervention || c.general_remarks || 'Not recorded',
-          medicine: c.medicine || c.prescription || 'None prescribed',
-          notes: [c.assessment, c.disposition].filter(Boolean).join(' / '),
+          recordType: c.record_type,
+          title: c.record_type === 'emergency'
+            ? `Emergency: ${c.reason || 'Encounter'}`
+            : c.chief_complaint || c.appointment?.service || 'Consultation',
+          primaryLabel: c.record_type === 'emergency' ? 'Reason' : 'Chief Complaint',
+          primaryValue: c.reason || c.chief_complaint || 'Not recorded',
+          notesLabel: c.record_type === 'emergency' ? 'Intervention' : 'General Remarks / Clinical Notes',
+          notesValue: c.intervention || c.general_remarks || 'Not recorded',
+          assessment: c.assessment || '',
+          symptoms: c.symptoms || '',
+          disposition: c.disposition || '',
+          appointment: c.appointment || null,
+          medicalCertificate: Boolean(c.medical_certificate),
+          medicalCertificateRef: c.medical_certificate_ref || '',
+          followUpRequired: Boolean(c.follow_up_required),
+          followUpDate: c.follow_up_date || '',
           nurse: c.nurse ? `${c.nurse.first_name || ''} ${c.nurse.last_name || ''}`.trim() || 'Attending Nurse' : 'Attending Nurse',
           vitals: {
             bp: c.vital_signs?.bp || null,
@@ -49,7 +62,7 @@ const HealthRecords = () => {
           status: c.status || 'completed',
         }));
         
-        setRecords(formatted);
+        setRecords(formatted.sort((a, b) => new Date(b.date) - new Date(a.date)));
 
       }
     } catch (err) {
@@ -60,27 +73,35 @@ const HealthRecords = () => {
     }
   };
 
-  const years = [...new Set(records.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a);
+  const getClinicYear = (value) => new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+  }).format(new Date(value));
+
+  const years = [...new Set(records.map(r => getClinicYear(r.date)))].sort((a, b) => b.localeCompare(a));
 
   const filteredRecords = records.filter(r => {
     const matchesSearch = search === '' || 
-      r.diagnosis.toLowerCase().includes(search.toLowerCase()) ||
-      r.treatment.toLowerCase().includes(search.toLowerCase()) ||
+      r.title.toLowerCase().includes(search.toLowerCase()) ||
+      r.primaryValue.toLowerCase().includes(search.toLowerCase()) ||
+      r.notesValue.toLowerCase().includes(search.toLowerCase()) ||
       r.nurse.toLowerCase().includes(search.toLowerCase());
     
-    const matchesYear = filterYear === 'all' || new Date(r.date).getFullYear().toString() === filterYear;
+    const matchesYear = filterYear === 'all' || getClinicYear(r.date) === filterYear;
     
     return matchesSearch && matchesYear;
   });
 
+  const followUpCount = records.filter((record) => record.followUpRequired).length;
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   if (loading) {
@@ -151,9 +172,18 @@ const HealthRecords = () => {
       </div>
 
       {error && (
-        <div className="mb-5 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-2xl text-sm text-center border border-red-200 dark:border-red-800/20">
-          {error}
+        <div className="mb-5 flex flex-col items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400 sm:flex-row">
+          <span>{error}</span>
+          <button onClick={fetchRecords} className="inline-flex items-center gap-2 rounded-md border border-red-300 px-3 py-2 font-semibold hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/30"><RefreshCw className="h-4 w-4" /> Retry</button>
         </div>
+      )}
+
+      {!error && records.length > 0 && (
+        <section aria-label="Record summary" className="mb-5 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-gray-700 dark:bg-gray-700 sm:grid-cols-3">
+          <div className="bg-white p-4 dark:bg-gray-800"><p className="text-xs text-gray-500 dark:text-gray-400">Total visits</p><p className="mt-1 text-xl font-bold text-gray-950 dark:text-white">{records.length}</p></div>
+          <div className="bg-white p-4 dark:bg-gray-800"><p className="text-xs text-gray-500 dark:text-gray-400">Latest visit</p><p className="mt-1 text-sm font-semibold text-gray-950 dark:text-white">{formatDate(records[0].date)}</p></div>
+          <div className="bg-white p-4 dark:bg-gray-800"><p className="text-xs text-gray-500 dark:text-gray-400">Follow-ups</p><p className="mt-1 text-xl font-bold text-gray-950 dark:text-white">{followUpCount}</p></div>
+        </section>
       )}
 
       <AnimatePresence>
@@ -177,9 +207,9 @@ const HealthRecords = () => {
                     filterYear === 'all' ? 'bg-maroon-800 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   }`}>All Years</button>
                 {years.map(year => (
-                  <button key={year} onClick={() => { setFilterYear(year.toString()); setShowFilters(false); }}
+                  <button key={year} onClick={() => { setFilterYear(year); setShowFilters(false); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                      filterYear === year.toString() ? 'bg-maroon-800 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                      filterYear === year ? 'bg-maroon-800 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                     }`}>{year}</button>
                 ))}
               </div>
@@ -191,9 +221,9 @@ const HealthRecords = () => {
       {filteredRecords.length === 0 ? (
         <div className="text-center py-16">
           <ClipboardList className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400">No Records Found</h3>
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400">{search || filterYear !== 'all' ? 'No matching records' : 'No health records yet'}</h3>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {search || filterYear !== 'all' ? 'Try adjusting your filters.' : 'Your consultation history will appear here.'}
+            {search || filterYear !== 'all' ? 'Try adjusting your search or year filter.' : 'Completed clinic encounters will appear here.'}
           </p>
         </div>
       ) : (
@@ -211,7 +241,7 @@ const HealthRecords = () => {
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                      {record.diagnosis}
+                      {record.title}
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1">
@@ -221,12 +251,6 @@ const HealthRecords = () => {
                       <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">•</span>
                       <span>{formatTime(record.date)}</span>
                     </div>
-                    {record.medicine && record.medicine !== 'None prescribed' && (
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-maroon-600 dark:text-maroon-400">
-                        <Pill className="w-3 h-3" />
-                        <span className="truncate">{record.medicine}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -238,9 +262,9 @@ const HealthRecords = () => {
                     {record.status}
                   </span>
                   {expandedId === record.id ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                    <><span className="hidden text-xs font-semibold text-maroon-700 dark:text-maroon-400 sm:inline">Hide details</span><ChevronUp className="w-4 h-4 text-gray-400" /></>
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <><span className="hidden text-xs font-semibold text-maroon-700 dark:text-maroon-400 sm:inline">View details</span><ChevronDown className="w-4 h-4 text-gray-400" /></>
                   )}
                 </div>
               </button>
@@ -293,26 +317,18 @@ const HealthRecords = () => {
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5">
                           <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <Stethoscope className="w-3 h-3" /> Diagnosis
+                            <Stethoscope className="w-3 h-3" /> {record.primaryLabel}
                           </p>
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {record.diagnosis}
+                            {record.primaryValue}
                           </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5">
                           <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <ClipboardList className="w-3 h-3" /> Treatment
+                            <ClipboardList className="w-3 h-3" /> {record.notesLabel}
                           </p>
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {record.treatment}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5">
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <Pill className="w-3 h-3" /> Medicine
-                          </p>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {record.medicine}
+                            {record.notesValue}
                           </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5">
@@ -325,17 +341,34 @@ const HealthRecords = () => {
                         </div>
                       </div>
 
-                      {record.notes && (
+                      {(record.symptoms || record.appointment?.service) && <div className="mt-3 grid sm:grid-cols-2 gap-3">
+                        {record.symptoms && <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5"><p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Symptoms</p><p className="break-words whitespace-pre-wrap text-sm font-medium text-gray-800 dark:text-gray-200">{record.symptoms}</p></div>}
+                        {record.appointment?.service && <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5"><p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Appointment service</p><p className="break-words text-sm font-medium text-gray-800 dark:text-gray-200">{record.appointment.service}</p></div>}
+                      </div>}
+
+                      {(record.assessment || record.disposition) && (
                         <div className="mt-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-3.5 border border-yellow-100 dark:border-yellow-800/20">
-                          <p className="text-[11px] text-yellow-600 dark:text-yellow-500 uppercase tracking-wider mb-1">Notes</p>
-                          <p className="text-sm text-yellow-800 dark:text-yellow-300">{record.notes}</p>
+                          {record.assessment && <p className="text-sm text-yellow-800 dark:text-yellow-300"><strong>Assessment:</strong> {record.assessment}</p>}
+                          {record.disposition && <p className="text-sm text-yellow-800 dark:text-yellow-300"><strong>Disposition:</strong> {record.disposition}</p>}
                         </div>
                       )}
 
-                      <button className="mt-4 w-full py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2">
-                        <Download className="w-4 h-4" />
-                        Download Record
-                      </button>
+                      {(record.followUpRequired || record.medicalCertificate) && (
+                        <div className="mt-3 grid sm:grid-cols-2 gap-3">
+                          {record.followUpRequired && (
+                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5 text-sm text-gray-800 dark:text-gray-200">
+                              <strong>Follow-up Required</strong>
+                              {record.followUpDate && <div>{formatDate(record.followUpDate)}</div>}
+                            </div>
+                          )}
+                          {record.medicalCertificate && (
+                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3.5 text-sm text-gray-800 dark:text-gray-200">
+                              <strong>Medical Certificate</strong>
+                              {record.medicalCertificateRef && <div>Reference: {record.medicalCertificateRef}</div>}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

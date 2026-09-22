@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Users, Camera, Save, Loader2, Hash, GraduationCap, Calendar, Edit3, X, Shield, ArrowLeft } from 'lucide-react';
 import api from '../../../services/api';
 
@@ -16,45 +16,55 @@ const ProfileEdit = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [profilePic, setProfilePic] = useState(null);
-  const [healthProfile, setHealthProfile] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
   const [fetching, setFetching] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [loadedProfile, setLoadedProfile] = useState(user.profile || {});
 
   useEffect(() => {
-    const fetchHealthProfile = async () => {
+    const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await api.get('/student/health-profile', { headers: { Authorization: `Bearer ${token}` } });
-        if (response.data.success && response.data.data) {
-          setHealthProfile(response.data.data);
+        const response = await api.get('/student/profile', { headers: { Authorization: `Bearer ${token}` } });
+        if (response.data.success) {
+          const profile = response.data.data?.profile || {};
+          const returnedUser = response.data.data?.user || {};
+          setLoadedProfile(profile);
+          setProfilePic(profile.profile_picture || null);
           setForm(prev => ({
             ...prev,
-            guardian_name: response.data.data.emergency_name || '',
-            guardian_contact: response.data.data.emergency_phone || '',
-            emergency_contact_name: response.data.data.emergency_name || '',
-            emergency_contact_number: response.data.data.emergency_phone || '',
+            mobile_number: profile.mobile_number ?? returnedUser.mobile_number ?? '',
+            address: profile.address || '',
+            guardian_name: profile.guardian_name || '',
+            guardian_relationship: profile.guardian_relationship || '',
+            guardian_contact: profile.guardian_contact || '',
           }));
         }
-      } catch (err) { console.log('Health profile not found'); }
+      } catch (err) { console.log('Profile could not be loaded', err); }
       finally { setFetching(false); }
     };
-    fetchHealthProfile();
+    fetchProfile();
   }, []);
 
   const [form, setForm] = useState({
     mobile_number: user.mobile_number || '',
     address: user.profile?.address || '',
     guardian_name: '',
+    guardian_relationship: '',
     guardian_contact: '',
-    emergency_contact_name: '',
-    emergency_contact_number: '',
   });
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setFieldErrors((current) => ({ ...current, [e.target.name]: undefined }));
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { setMessage('Image must be less than 2MB'); setMessageType('error'); return; }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setMessage('Use a JPG, PNG, or WebP image.'); setMessageType('error'); return; }
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onload = () => setProfilePic(reader.result);
       reader.readAsDataURL(file);
@@ -62,38 +72,64 @@ const ProfileEdit = () => {
   };
 
   const handleSave = async () => {
-    setLoading(true); setMessage('');
+    setLoading(true); setMessage(''); setFieldErrors({});
     try {
       const token = localStorage.getItem('token');
-      await api.put('/student/profile', { mobile_number: form.mobile_number, address: form.address }, { headers: { Authorization: `Bearer ${token}` } });
-      if (healthProfile) {
-        await api.put('/student/health-profile', {
-          emergency_contact_name: form.guardian_name || form.emergency_contact_name,
-          emergency_contact_phone: form.guardian_contact || form.emergency_contact_number,
-        }, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await api.put('/student/profile', {
+        mobile_number: form.mobile_number,
+        address: form.address,
+        guardian_name: form.guardian_name,
+        guardian_relationship: form.guardian_relationship,
+        guardian_contact: form.guardian_contact,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      let avatarUrl = user.profile?.profile_picture || null;
+      if (avatarFile) {
+        const avatarData = new FormData();
+        avatarData.append('avatar', avatarFile);
+        const avatarResponse = await api.post('/student/profile/avatar', avatarData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        avatarUrl = avatarResponse.data.data?.profile_picture || avatarUrl;
       }
-      const updatedUser = { ...user, mobile_number: form.mobile_number, profile: { ...(user.profile || {}), address: form.address } };
+      const returnedUser = response.data.data?.user || {};
+      const returnedProfile = response.data.data?.profile || {};
+      const updatedUser = {
+        ...user,
+        ...returnedUser,
+        profile: {
+          ...(user.profile || {}),
+          ...returnedProfile,
+          profile_picture: avatarUrl || returnedProfile.profile_picture,
+        },
+      };
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event('studentProfileUpdated'));
       setMessageType('success');
-      setMessage('Profile updated successfully!');
+      setMessage('Profile updated successfully.');
+      setAvatarFile(null);
       setEditing(false);
+      setTimeout(() => navigate('/student/profile'), 700);
     } catch (err) {
       setMessageType('error');
-      setMessage(err.response?.data?.message || 'Failed to update profile.');
-    } finally { setLoading(false); setTimeout(() => setMessage(''), 3000); }
+      setFieldErrors(err.response?.status === 422 ? (err.response?.data?.errors || {}) : {});
+      setMessage(err.response?.status === 422 ? 'Please check the highlighted fields.' : 'We could not update your profile. Please try again.');
+    } finally { setLoading(false); }
   };
 
   const handleCancel = () => {
     setEditing(false);
     setForm({
-      mobile_number: user.mobile_number || '',
-      address: user.profile?.address || '',
-      guardian_name: healthProfile?.emergency_name || '',
-      guardian_contact: healthProfile?.emergency_phone || '',
-      emergency_contact_name: healthProfile?.emergency_name || '',
-      emergency_contact_number: healthProfile?.emergency_phone || '',
+      mobile_number: loadedProfile.mobile_number ?? user.mobile_number ?? '',
+      address: loadedProfile.address || '',
+      guardian_name: loadedProfile.guardian_name || '',
+      guardian_relationship: loadedProfile.guardian_relationship || '',
+      guardian_contact: loadedProfile.guardian_contact || '',
     });
     setMessage('');
+    setFieldErrors({});
+    setAvatarFile(null);
+    setProfilePic(loadedProfile.profile_picture || null);
   };
 
   const getAge = (birthday) => {
@@ -235,8 +271,9 @@ const ProfileEdit = () => {
                 <label className={labelClass}>Mobile Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input className={`${inputClass} pl-10`} type="text" name="mobile_number" value={form.mobile_number} onChange={handleChange} placeholder="09XXXXXXXXX" disabled={!editing} />
+                  <input className={`${inputClass} pl-10`} type="tel" name="mobile_number" value={form.mobile_number} onChange={handleChange} placeholder="09XXXXXXXXX" disabled={!editing} aria-invalid={Boolean(fieldErrors.mobile_number)} />
                 </div>
+                {fieldErrors.mobile_number && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.mobile_number[0]}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className={labelClass}>Address</label>
@@ -244,13 +281,14 @@ const ProfileEdit = () => {
                   <MapPin className="absolute left-3.5 top-3 text-gray-400" />
                   <textarea className={`${inputClass} pl-10 resize-none`} name="address" value={form.address} onChange={handleChange} rows={2} placeholder="Enter your address" disabled={!editing} />
                 </div>
+                {fieldErrors.address && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.address[0]}</p>}
               </div>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-red-500" />Emergency & Guardian
+              <Shield className="w-5 h-5 text-red-500" />Guardian Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -259,27 +297,23 @@ const ProfileEdit = () => {
                   <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input className={`${inputClass} pl-10`} type="text" name="guardian_name" value={form.guardian_name} onChange={handleChange} placeholder="Guardian name" disabled={!editing} />
                 </div>
+                {fieldErrors.guardian_name && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.guardian_name[0]}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Relationship</label>
+                <div className="relative">
+                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input className={`${inputClass} pl-10`} type="text" name="guardian_relationship" value={form.guardian_relationship} onChange={handleChange} placeholder="Relationship" disabled={!editing} />
+                </div>
+                {fieldErrors.guardian_relationship && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.guardian_relationship[0]}</p>}
               </div>
               <div>
                 <label className={labelClass}>Guardian Contact</label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input className={`${inputClass} pl-10`} type="text" name="guardian_contact" value={form.guardian_contact} onChange={handleChange} placeholder="Guardian phone" disabled={!editing} />
+                  <input className={`${inputClass} pl-10`} type="tel" name="guardian_contact" value={form.guardian_contact} onChange={handleChange} placeholder="Guardian phone" disabled={!editing} />
                 </div>
-              </div>
-              <div>
-                <label className={labelClass}>Emergency Contact Name</label>
-                <div className="relative">
-                  <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input className={`${inputClass} pl-10`} type="text" name="emergency_contact_name" value={form.emergency_contact_name} onChange={handleChange} placeholder="Emergency contact name" disabled={!editing} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Emergency Contact Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input className={`${inputClass} pl-10`} type="text" name="emergency_contact_number" value={form.emergency_contact_number} onChange={handleChange} placeholder="Emergency contact phone" disabled={!editing} />
-                </div>
+                {fieldErrors.guardian_contact && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.guardian_contact[0]}</p>}
               </div>
             </div>
           </div>

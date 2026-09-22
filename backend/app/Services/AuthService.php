@@ -47,18 +47,6 @@ class AuthService
             'status' => 'active',
         ]);
 
-        \App\Models\StudentProfile::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'course' => $data['course'] ?? null,
-                'year' => $data['year'] ?? null,
-                'section' => $data['section'] ?? null,
-                'birthday' => $data['birthday'] ?? null,
-                'gender' => isset($data['gender']) ? strtolower($data['gender']) : null,
-                'mobile_number' => $data['mobile_number'] ?? null,
-            ]
-        );
-
         $this->generateQRCode($user);
 
         return [
@@ -259,8 +247,7 @@ class AuthService
 
         if (
             !$user ||
-            $user->role !== 'student' ||
-            $user->status !== 'active'
+            $user->role !== 'student'
         ) {
             throw new \Exception(
                 'Invalid credentials.'
@@ -278,18 +265,6 @@ class AuthService
         ) {
             throw new \Exception(
                 'Invalid birthday.'
-            );
-        }
-
-        if ($user->status === 'archived') {
-            throw new \Exception(
-                'Account archived.'
-            );
-        }
-
-        if ($user->status === 'inactive') {
-            throw new \Exception(
-                'Account inactive.'
             );
         }
 

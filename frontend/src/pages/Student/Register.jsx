@@ -23,6 +23,11 @@ import {
   CheckCircle,
   ShieldCheck,
   RefreshCw,
+  User,
+  GraduationCap,
+  X,
+  ChevronRight,
+  FileText,
 } from 'lucide-react';
 
 import clinicLogo from '../../assets/clinic logo.jpg';
@@ -31,40 +36,209 @@ import pupbg from '../../assets/pupbg.jpg';
 const OTP_RESEND_COOLDOWN = 60;
 const OTP_EXPIRY_MINUTES = 10;
 
+const courses = [
+  {
+    value: 'BSIT',
+    label: 'BSIT',
+  },
+  {
+    value: 'BSCPE',
+    label: 'BSCPE',
+  },
+  {
+    value: 'BSIE',
+    label: 'BSIE',
+  },
+  {
+    value: 'BSBA-HRM',
+    label: 'BSBA-HRM',
+  },
+  {
+    value: 'BSED-SS',
+    label: 'BSED-SS',
+  },
+  {
+    value: 'BSED-English',
+    label: 'BSED-English',
+  },
+  {
+    value: 'BEED',
+    label: 'BEED',
+  },
+  {
+    value: 'BSPSYCH',
+    label: 'BSPSYCH',
+  },
+  {
+    value: 'DIT',
+    label: 'DIT',
+  },
+  {
+    value: 'DCET',
+    label: 'DCET',
+  },
+];
+
+const yearLevels = [
+  '1st Year',
+  '2nd Year',
+  '3rd Year',
+  '4th Year',
+];
+
+const getSections = (year) => {
+  const sectionMap = {
+    '1st Year': [
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+      '1-5',
+    ],
+
+    '2nd Year': [
+      '2-1',
+      '2-2',
+      '2-3',
+      '2-4',
+      '2-5',
+    ],
+
+    '3rd Year': [
+      '3-1',
+      '3-2',
+      '3-3',
+      '3-4',
+      '3-5',
+    ],
+
+    '4th Year': [
+      '4-1',
+      '4-2',
+      '4-3',
+      '4-4',
+      '4-5',
+    ],
+  };
+
+  return sectionMap[year] || [];
+};
+
+const months = [
+  {
+    value: '01',
+    label: 'January',
+  },
+  {
+    value: '02',
+    label: 'February',
+  },
+  {
+    value: '03',
+    label: 'March',
+  },
+  {
+    value: '04',
+    label: 'April',
+  },
+  {
+    value: '05',
+    label: 'May',
+  },
+  {
+    value: '06',
+    label: 'June',
+  },
+  {
+    value: '07',
+    label: 'July',
+  },
+  {
+    value: '08',
+    label: 'August',
+  },
+  {
+    value: '09',
+    label: 'September',
+  },
+  {
+    value: '10',
+    label: 'October',
+  },
+  {
+    value: '11',
+    label: 'November',
+  },
+  {
+    value: '12',
+    label: 'December',
+  },
+];
+
+const SectionTitle = ({
+  icon: Icon,
+  title,
+  description,
+}) => (
+  <div className="flex items-start gap-3">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+      <Icon className="h-4 w-4" />
+    </div>
+
+    <div>
+      <h3 className="text-sm font-bold text-gray-900">
+        {title}
+      </h3>
+
+      <p className="mt-0.5 text-xs leading-5 text-gray-500">
+        {description}
+      </p>
+    </div>
+  </div>
+);
+
 const Register = () => {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [form, setForm] = useState({
-    student_id: '',
-    first_name: '',
-    middle_name: '',
-    last_name: '',
-    email: '',
-    mobile_number: '',
+  const [form, setForm] =
+    useState({
+      student_id: '',
+      first_name: '',
+      middle_name: '',
+      last_name: '',
+      email: '',
+      mobile_number: '',
 
-    dobMonth: '',
-    dobDay: '',
-    dobYear: '',
+      dobMonth: '',
+      dobDay: '',
+      dobYear: '',
 
-    gender: '',
-    course: '',
-    year: '',
-    section: '',
+      gender: '',
+      course: '',
+      year: '',
+      section: '',
 
-    password: '',
-    password_confirmation: '',
+      password: '',
+      password_confirmation:
+        '',
 
-    agree_terms: false,
-  });
+      agree_terms: false,
+    });
 
-  const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState('');
+  const [errors, setErrors] =
+    useState({});
+
+  const [message, setMessage] =
+    useState('');
 
   const [loading, setLoading] =
     useState(false);
 
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   const [
     showConfirmPassword,
@@ -87,170 +261,70 @@ const Register = () => {
     setResendingOtp,
   ] = useState(false);
 
-  const courses = [
-    {
-      value: 'BSIT',
-      label:
-        'Information Technology (BSIT)',
-    },
-    {
-      value: 'BSCS',
-      label:
-        'Computer Science (BSCS)',
-    },
-    {
-      value: 'BSIS',
-      label:
-        'Information Systems (BSIS)',
-    },
-    {
-      value: 'BSCE',
-      label:
-        'Civil Engineering (BSCE)',
-    },
-    {
-      value: 'BSEE',
-      label:
-        'Electrical Engineering (BSEE)',
-    },
-    {
-      value: 'BSME',
-      label:
-        'Mechanical Engineering (BSME)',
-    },
-    {
-      value: 'BSA',
-      label:
-        'Accountancy (BSA)',
-    },
-    {
-      value: 'BSBA',
-      label:
-        'Business Administration (BSBA)',
-    },
-    {
-      value: 'BSED',
-      label:
-        'Secondary Education (BSED)',
-    },
-    {
-      value: 'BEED',
-      label:
-        'Elementary Education (BEED)',
-    },
-    {
-      value: 'BSN',
-      label:
-        'Nursing (BSN)',
-    },
-    {
-      value: 'BSHM',
-      label:
-        'Hospitality Management (BSHM)',
-    },
-    {
-      value: 'BSTourism',
-      label:
-        'Tourism Management (BSTourism)',
-    },
-    {
-      value: 'BSOA',
-      label:
-        'Office Administration (BSOA)',
-    },
-    {
-      value: 'BPA',
-      label:
-        'Public Administration (BPA)',
-    },
-  ];
-
-  const getSections = (year) => {
-    const sectionMap = {
-      '1st Year': [
-        '1-1',
-        '1-2',
-        '1-3',
-        '1-4',
-        '1-5',
-      ],
-
-      '2nd Year': [
-        '2-1',
-        '2-2',
-        '2-3',
-        '2-4',
-        '2-5',
-      ],
-
-      '3rd Year': [
-        '3-1',
-        '3-2',
-        '3-3',
-        '3-4',
-        '3-5',
-      ],
-
-      '4th Year': [
-        '4-1',
-        '4-2',
-        '4-3',
-        '4-4',
-        '4-5',
-      ],
-    };
-
-    return sectionMap[year] || [];
-  };
-
-  const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' },
-  ];
+  const [
+    legalModal,
+    setLegalModal,
+  ] = useState(null);
 
   const currentYear =
     new Date().getFullYear();
 
-  const years = Array.from(
-    { length: 80 },
-    (_, i) => currentYear - i
-  );
-
-  const days = useMemo(() => {
-    if (
-      !form.dobMonth ||
-      !form.dobYear
-    ) {
-      return Array.from(
-        { length: 31 },
-        (_, i) => i + 1
-      );
-    }
-
-    const maxDay = new Date(
-      Number(form.dobYear),
-      Number(form.dobMonth),
-      0
-    ).getDate();
-
-    return Array.from(
-      { length: maxDay },
-      (_, i) => i + 1
+  const birthYears =
+    useMemo(
+      () =>
+        Array.from(
+          {
+            length: 80,
+          },
+          (_, index) =>
+            currentYear -
+            index
+        ),
+      [currentYear]
     );
-  }, [
-    form.dobMonth,
-    form.dobYear,
-  ]);
+
+  const birthDays =
+    useMemo(() => {
+      if (
+        !form.dobMonth ||
+        !form.dobYear
+      ) {
+        return Array.from(
+          {
+            length: 31,
+          },
+          (_, index) =>
+            index + 1
+        );
+      }
+
+      const maxDay =
+        new Date(
+          Number(form.dobYear),
+          Number(form.dobMonth),
+          0
+        ).getDate();
+
+      return Array.from(
+        {
+          length: maxDay,
+        },
+        (_, index) =>
+          index + 1
+      );
+    }, [
+      form.dobMonth,
+      form.dobYear,
+    ]);
+
+  const sections =
+    useMemo(
+      () =>
+        getSections(
+          form.year
+        ),
+      [form.year]
+    );
 
   const nameRegex =
     /^[A-Za-z\s\-'.]+$/;
@@ -258,31 +332,154 @@ const Register = () => {
   const idRegex =
     /^\d{4}-\d{5}-BN-[01]$/i;
 
-
   useEffect(() => {
-    if (otpCooldown <= 0) {
+    if (
+      otpCooldown <= 0
+    ) {
       return;
     }
 
-    const timer = window.setInterval(
-      () => {
-        setOtpCooldown((current) => {
-          if (current <= 1) {
-            window.clearInterval(timer);
+    const timer =
+      window.setInterval(
+        () => {
+          setOtpCooldown(
+            (current) => {
+              if (
+                current <= 1
+              ) {
+                window.clearInterval(
+                  timer
+                );
 
-            return 0;
-          }
+                return 0;
+              }
 
-          return current - 1;
-        });
-      },
-      1000
-    );
+              return (
+                current - 1
+              );
+            }
+          );
+        },
+        1000
+      );
 
     return () =>
-      window.clearInterval(timer);
+      window.clearInterval(
+        timer
+      );
   }, [otpCooldown]);
 
+  const formatStudentId = (
+    value
+  ) => {
+    const clean =
+      value
+        .toUpperCase()
+        .replace(
+          /[^0-9BN]/g,
+          ''
+        );
+
+    if (
+      clean.length <= 4
+    ) {
+      return clean;
+    }
+
+    if (
+      clean.length <= 9
+    ) {
+      return `${clean.slice(
+        0,
+        4
+      )}-${clean.slice(
+        4
+      )}`;
+    }
+
+    if (
+      clean.length <= 11
+    ) {
+      return `${clean.slice(
+        0,
+        4
+      )}-${clean.slice(
+        4,
+        9
+      )}-${clean.slice(
+        9
+      )}`;
+    }
+
+    return `${clean.slice(
+      0,
+      4
+    )}-${clean.slice(
+      4,
+      9
+    )}-${clean.slice(
+      9,
+      11
+    )}-${clean.slice(
+      11,
+      12
+    )}`.slice(0, 17);
+  };
+
+  const normalizeMobileForDisplay =
+    (value) => {
+      let cleaned =
+        value.replace(
+          /[^0-9+]/g,
+          ''
+        );
+
+      if (
+        cleaned.startsWith(
+          '63'
+        )
+      ) {
+        cleaned =
+          `+${cleaned}`;
+      }
+
+      if (
+        cleaned.startsWith(
+          '+63'
+        )
+      ) {
+        return cleaned.slice(
+          0,
+          13
+        );
+      }
+
+      return cleaned.slice(
+        0,
+        11
+      );
+    };
+
+  const normalizeMobileForApi =
+    (value) => {
+      const cleaned =
+        value.replace(
+          /\s/g,
+          ''
+        );
+
+      if (
+        /^09\d{9}$/.test(
+          cleaned
+        )
+      ) {
+        return `+63${cleaned.slice(
+          1
+        )}`;
+      }
+
+      return cleaned;
+    };
 
   const handleChange = (e) => {
     const {
@@ -292,52 +489,19 @@ const Register = () => {
       checked,
     } = e.target;
 
-    let newVal =
+    let newValue =
       type === 'checkbox'
         ? checked
         : value;
 
-    if (name === 'student_id') {
-      const raw = value
-        .toUpperCase()
-        .replace(/[^0-9BN-]/g, '');
-
-      const clean =
-        raw.replace(/-/g, '');
-
-      if (clean.length <= 4) {
-        newVal = clean;
-      } else if (
-        clean.length <= 9
-      ) {
-        newVal =
-          clean.slice(0, 4) +
-          '-' +
-          clean.slice(4);
-      } else if (
-        clean.length <= 11
-      ) {
-        newVal =
-          clean.slice(0, 4) +
-          '-' +
-          clean.slice(4, 9) +
-          '-' +
-          clean.slice(9);
-      } else {
-        newVal =
-          clean.slice(0, 4) +
-          '-' +
-          clean.slice(4, 9) +
-          '-' +
-          clean.slice(9, 11) +
-          '-' +
-          clean.slice(11, 12);
-      }
-
-      if (newVal.length > 17) {
-        newVal =
-          newVal.slice(0, 17);
-      }
+    if (
+      name ===
+      'student_id'
+    ) {
+      newValue =
+        formatStudentId(
+          value
+        );
     }
 
     if (
@@ -347,97 +511,254 @@ const Register = () => {
         'last_name',
       ].includes(name)
     ) {
-      newVal =
+      newValue =
         value.replace(
           /[^A-Za-z\s\-'.]/g,
           ''
         );
     }
 
-    if (name === 'mobile_number') {
-      newVal =
-        value.replace(
-          /[^0-9+]/g,
-          ''
+    if (
+      name ===
+      'mobile_number'
+    ) {
+      newValue =
+        normalizeMobileForDisplay(
+          value
         );
-
-      if (
-        newVal.startsWith('63') &&
-        !newVal.startsWith('+')
-      ) {
-        newVal = '+' + newVal;
-      }
-
-      newVal =
-        newVal.startsWith('+63')
-          ? newVal.slice(0, 13)
-          : newVal.slice(0, 11);
     }
 
-    setForm((previous) => {
-      const updated = {
-        ...previous,
-        [name]: newVal,
-      };
-
-      if (
-        name === 'year' &&
-        newVal !== previous.year
-      ) {
-        updated.section = '';
-      }
-
-      if (
-        name === 'dobMonth' ||
-        name === 'dobYear'
-      ) {
-        const selectedMonth =
-          name === 'dobMonth'
-            ? newVal
-            : updated.dobMonth;
-
-        const selectedYear =
-          name === 'dobYear'
-            ? newVal
-            : updated.dobYear;
+    setForm(
+      (previous) => {
+        const updated = {
+          ...previous,
+          [name]:
+            newValue,
+        };
 
         if (
-          selectedMonth &&
-          selectedYear &&
-          updated.dobDay
+          name ===
+            'year' &&
+          newValue !==
+            previous.year
         ) {
-          const maxDay =
-            new Date(
-              Number(selectedYear),
-              Number(selectedMonth),
-              0
-            ).getDate();
+          updated.section =
+            '';
+        }
+
+        if (
+          [
+            'dobMonth',
+            'dobYear',
+          ].includes(name)
+        ) {
+          const month =
+            name ===
+            'dobMonth'
+              ? newValue
+              : updated.dobMonth;
+
+          const year =
+            name ===
+            'dobYear'
+              ? newValue
+              : updated.dobYear;
 
           if (
-            Number(updated.dobDay) >
-            maxDay
+            month &&
+            year &&
+            updated.dobDay
           ) {
-            updated.dobDay = '';
+            const maxDay =
+              new Date(
+                Number(year),
+                Number(month),
+                0
+              ).getDate();
+
+            if (
+              Number(
+                updated.dobDay
+              ) >
+              maxDay
+            ) {
+              updated.dobDay =
+                '';
+            }
           }
         }
+
+        return updated;
       }
+    );
 
-      return updated;
-    });
-
-    if (errors[name]) {
-      setErrors((previous) => ({
+    setErrors(
+      (previous) => ({
         ...previous,
         [name]: '',
-      }));
-    }
+        ...(name.startsWith(
+          'dob'
+        )
+          ? {
+              birthday:
+                '',
+            }
+          : {}),
+      })
+    );
   };
 
+  const getBirthday =
+    () => {
+      if (
+        !form.dobMonth ||
+        !form.dobDay ||
+        !form.dobYear
+      ) {
+        return '';
+      }
+
+      return `${form.dobYear}-${String(
+        form.dobMonth
+      ).padStart(
+        2,
+        '0'
+      )}-${String(
+        form.dobDay
+      ).padStart(
+        2,
+        '0'
+      )}`;
+    };
+
+  const getPasswordStrength =
+    () => {
+      const password =
+        form.password;
+
+      if (!password) {
+        return {
+          score: 0,
+          label:
+            'Enter a password',
+        };
+      }
+
+      let score = 0;
+
+      if (
+        password.length >= 8
+      ) {
+        score += 1;
+      }
+
+      if (
+        password.length >= 12
+      ) {
+        score += 1;
+      }
+
+      if (
+        /[a-z]/.test(
+          password
+        ) &&
+        /[A-Z]/.test(
+          password
+        )
+      ) {
+        score += 1;
+      }
+
+      if (
+        /\d/.test(password)
+      ) {
+        score += 1;
+      }
+
+      if (
+        /[^A-Za-z0-9]/.test(
+          password
+        )
+      ) {
+        score += 1;
+      }
+
+      if (score <= 1) {
+        return {
+          score,
+          label: 'Weak',
+        };
+      }
+
+      if (score <= 3) {
+        return {
+          score,
+          label: 'Fair',
+        };
+      }
+
+      if (score === 4) {
+        return {
+          score,
+          label: 'Strong',
+        };
+      }
+
+      return {
+        score,
+        label:
+          'Very strong',
+      };
+    };
+
+  const passwordStrength =
+    getPasswordStrength();
+
+  const validateEmail = (
+    email
+  ) => {
+    const value =
+      email.trim();
+
+    if (!value) {
+      return 'Email is required';
+    }
+
+    if (
+      !value.includes('@')
+    ) {
+      return 'Email must include @, for example name@gmail.com';
+    }
+
+    const parts =
+      value.split('@');
+
+    if (
+      parts.length !== 2 ||
+      !parts[0] ||
+      !parts[1]
+    ) {
+      return 'Enter a complete email address';
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(
+        value
+      )
+    ) {
+      return 'Enter a valid email address, for example name@gmail.com';
+    }
+
+    return '';
+  };
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors =
+      {};
 
-    if (!form.first_name.trim()) {
+    if (
+      !form.first_name.trim()
+    ) {
       newErrors.first_name =
         'First name is required';
     } else if (
@@ -446,10 +767,12 @@ const Register = () => {
       )
     ) {
       newErrors.first_name =
-        'Letters only';
+        'Use letters only';
     }
 
-    if (!form.last_name.trim()) {
+    if (
+      !form.last_name.trim()
+    ) {
       newErrors.last_name =
         'Last name is required';
     } else if (
@@ -458,7 +781,7 @@ const Register = () => {
       )
     ) {
       newErrors.last_name =
-        'Letters only';
+        'Use letters only';
     }
 
     if (
@@ -468,10 +791,12 @@ const Register = () => {
       )
     ) {
       newErrors.middle_name =
-        'Letters only';
+        'Use letters only';
     }
 
-    if (!form.student_id.trim()) {
+    if (
+      !form.student_id.trim()
+    ) {
       newErrors.student_id =
         'Student ID is required';
     } else if (
@@ -483,33 +808,37 @@ const Register = () => {
         'Format: 2023-00000-BN-0';
     }
 
-    if (!form.email.trim()) {
-      newErrors.email =
-        'Email is required';
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    const emailError =
+      validateEmail(
         form.email
-      )
-    ) {
+      );
+
+    if (emailError) {
       newErrors.email =
-        'Enter a valid email address';
+        emailError;
     }
 
-    if (
-      !form.mobile_number.trim()
-    ) {
+    const mobile =
+      form.mobile_number
+        .trim()
+        .replace(
+          /\s/g,
+          ''
+        );
+
+    if (!mobile) {
       newErrors.mobile_number =
         'Mobile number is required';
     } else if (
-      !/^(09\d{9}|\+63\d{10})$/.test(
-        form.mobile_number.replace(
-          /\s/g,
-          ''
-        )
+      !/^09\d{9}$/.test(
+        mobile
+      ) &&
+      !/^\+639\d{9}$/.test(
+        mobile
       )
     ) {
       newErrors.mobile_number =
-        'Use 09XXXXXXXXX or +63XXXXXXXXXX';
+        'Use 09XXXXXXXXX or +639XXXXXXXXX';
     }
 
     if (
@@ -518,12 +847,35 @@ const Register = () => {
       !form.dobYear
     ) {
       newErrors.birthday =
-        'Please select your birthday';
+        'Birthday is required';
+    } else {
+      const birthday =
+        getBirthday();
+
+      const birthdayDate =
+        new Date(
+          `${birthday}T00:00:00+08:00`
+        );
+
+      if (
+        Number.isNaN(
+          birthdayDate.getTime()
+        )
+      ) {
+        newErrors.birthday =
+          'Enter a valid birthday';
+      } else if (
+        birthdayDate >
+        new Date()
+      ) {
+        newErrors.birthday =
+          'Birthday cannot be in the future';
+      }
     }
 
     if (!form.gender) {
       newErrors.gender =
-        'Please select a gender';
+        'Select your gender';
     }
 
     if (!form.course) {
@@ -533,7 +885,7 @@ const Register = () => {
 
     if (!form.year) {
       newErrors.year =
-        'Year is required';
+        'Year level is required';
     }
 
     if (!form.section) {
@@ -545,13 +897,19 @@ const Register = () => {
       newErrors.password =
         'Password is required';
     } else if (
-      form.password.length < 8
+      form.password.length <
+      8
     ) {
       newErrors.password =
         'Password must be at least 8 characters';
     }
 
     if (
+      !form.password_confirmation
+    ) {
+      newErrors.password_confirmation =
+        'Confirm your password';
+    } else if (
       form.password !==
       form.password_confirmation
     ) {
@@ -561,17 +919,19 @@ const Register = () => {
 
     if (!form.agree_terms) {
       newErrors.agree_terms =
-        'You must agree to the Terms to continue';
+        'Please agree to the Terms of Service and Privacy Policy';
     }
 
-    setErrors(newErrors);
+    setErrors(
+      newErrors
+    );
 
     return (
-      Object.keys(newErrors)
-        .length === 0
+      Object.keys(
+        newErrors
+      ).length === 0
     );
   };
-
 
   const handleResendOtp =
     async () => {
@@ -593,14 +953,19 @@ const Register = () => {
         return;
       }
 
-      setResendingOtp(true);
+      setResendingOtp(
+        true
+      );
+
       setMessage('');
       setOtp('');
 
-      setErrors((previous) => ({
-        ...previous,
-        otp: '',
-      }));
+      setErrors(
+        (previous) => ({
+          ...previous,
+          otp: '',
+        })
+      );
 
       try {
         const res =
@@ -631,10 +996,11 @@ const Register = () => {
             'Unable to resend verification code. Please try again.'
         );
       } finally {
-        setResendingOtp(false);
+        setResendingOtp(
+          false
+        );
       }
     };
-
 
   const handleSubmit =
     async (e) => {
@@ -642,13 +1008,17 @@ const Register = () => {
 
       if (otpStep) {
         if (
-          !/^\d{6}$/.test(otp)
+          !/^\d{6}$/.test(
+            otp
+          )
         ) {
-          setErrors((previous) => ({
-            ...previous,
-            otp:
-              'Enter the 6-digit code sent to your email.',
-          }));
+          setErrors(
+            (previous) => ({
+              ...previous,
+              otp:
+                'Enter the 6-digit code sent to your email.',
+            })
+          );
 
           return;
         }
@@ -671,7 +1041,9 @@ const Register = () => {
 
             window.setTimeout(
               () =>
-                navigate('/login'),
+                navigate(
+                  '/login'
+                ),
               2000
             );
           } else {
@@ -701,12 +1073,6 @@ const Register = () => {
       setMessage('');
 
       try {
-        const pad = (number) =>
-          String(number).padStart(
-            2,
-            '0'
-          );
-
         const payload = {
           student_id:
             form.student_id
@@ -724,22 +1090,29 @@ const Register = () => {
             form.last_name.trim(),
 
           email:
-            form.email.trim(),
+            form.email
+              .trim()
+              .toLowerCase(),
 
           mobile_number:
-            form.mobile_number.trim(),
+            normalizeMobileForApi(
+              form.mobile_number
+            ),
 
           birthday:
-            `${form.dobYear}-${pad(
-              form.dobMonth
-            )}-${pad(
-              form.dobDay
-            )}`,
+            getBirthday(),
 
-          gender: form.gender,
-          course: form.course,
-          year: form.year,
-          section: form.section,
+          gender:
+            form.gender,
+
+          course:
+            form.course,
+
+          year:
+            form.year,
+
+          section:
+            form.section,
 
           password:
             form.password,
@@ -749,8 +1122,9 @@ const Register = () => {
         };
 
         const res =
-          await authService
-            .register(payload);
+          await authService.register(
+            payload
+          );
 
         if (res.success) {
           setOtpStep(true);
@@ -788,70 +1162,80 @@ const Register = () => {
       }
     };
 
-  const sections =
-    getSections(form.year);
-
   const FieldError = ({
     error,
   }) =>
     error ? (
-      <p className="text-red-500 text-xs mt-1">
+      <p className="mt-1 text-xs text-red-500">
         {Array.isArray(error)
           ? error[0]
           : error}
       </p>
     ) : null;
 
+  const inputClass =
+    'w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-maroon-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-maroon-500 disabled:cursor-not-allowed disabled:opacity-60';
+
+  const iconInputClass =
+    'w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3.5 text-sm text-gray-900 transition focus:border-maroon-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-maroon-500 disabled:cursor-not-allowed disabled:opacity-60';
+
   const selectClass =
-    'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none';
+    'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 transition focus:border-maroon-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-maroon-500 disabled:cursor-not-allowed disabled:opacity-60';
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center py-8 px-4">
-
+    <div className="relative min-h-screen overflow-hidden px-4 py-8">
       <div className="absolute inset-0">
         <img
           src={pupbg}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/78 via-maroon-800/72 to-maroon-950/78" />
+        <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/80 via-maroon-800/75 to-maroon-950/85" />
       </div>
 
-      <div className="relative z-10 w-full max-w-xl">
-
-        <div className="flex flex-col items-center mb-5">
+      <div className="relative z-10 mx-auto w-full max-w-3xl">
+        <div className="mb-5 flex flex-col items-center">
           <img
             src={clinicLogo}
             alt="PUPBC CareLink logo"
-            className="w-20 h-20 object-cover drop-shadow-lg rounded-full"
+            className="h-20 w-20 rounded-full object-cover drop-shadow-lg"
           />
+
+          <p className="mt-2 text-sm font-semibold text-white/80">
+            PUPBC CareLink
+          </p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
-
-          <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Create a new account
+        <div className="rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              Create Account
             </h1>
 
-            <p className="text-gray-500 text-sm mt-1">
-              It&apos;s quick and easy.
+            <p className="mt-1 text-sm text-gray-500">
+              Register your student account for clinic services.
             </p>
           </div>
 
           {message && (
             <div
-              className={`mb-4 p-3 rounded-xl text-sm text-center ${
+              className={`mb-5 rounded-xl p-3 text-center text-sm ${
                 message
                   .toLowerCase()
-                  .includes('sent') ||
+                  .includes(
+                    'sent'
+                  ) ||
                 message
                   .toLowerCase()
-                  .includes('created') ||
+                  .includes(
+                    'created'
+                  ) ||
                 message
                   .toLowerCase()
-                  .includes('verified')
+                  .includes(
+                    'verified'
+                  )
                   ? 'bg-green-50 text-green-700'
                   : 'bg-red-50 text-red-700'
               }`}
@@ -861,612 +1245,875 @@ const Register = () => {
           )}
 
           <form
-            onSubmit={handleSubmit}
-            className="space-y-3"
+            onSubmit={
+              handleSubmit
+            }
+            className="space-y-6"
+            autoComplete="on"
           >
+            {!otpStep && (
+              <>
+                {/* Personal */}
+                <section className="space-y-4 rounded-2xl border border-gray-200 p-4">
+                  <SectionTitle
+                    icon={User}
+                    title="Personal Information"
+                    description="Enter your student identity exactly as it appears in school records."
+                  />
 
-            <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        First Name
+                      </label>
 
-              <div>
-                <input
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                  type="text"
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={handleChange}
-                  placeholder="First name"
-                  disabled={otpStep}
-                />
+                      <input
+                        className={
+                          inputClass
+                        }
+                        type="text"
+                        name="first_name"
+                        value={
+                          form.first_name
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="First name"
+                        autoComplete="given-name"
+                      />
 
-                <FieldError
-                  error={
-                    errors.first_name
-                  }
-                />
-              </div>
+                      <FieldError
+                        error={
+                          errors.first_name
+                        }
+                      />
+                    </div>
 
-              <div>
-                <input
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                  type="text"
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={handleChange}
-                  placeholder="Last name"
-                  disabled={otpStep}
-                />
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        Last Name
+                      </label>
 
-                <FieldError
-                  error={
-                    errors.last_name
-                  }
-                />
-              </div>
-            </div>
+                      <input
+                        className={
+                          inputClass
+                        }
+                        type="text"
+                        name="last_name"
+                        value={
+                          form.last_name
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                      />
 
-            <div>
-              <input
-                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                type="text"
-                name="middle_name"
-                value={form.middle_name}
-                onChange={handleChange}
-                placeholder="Middle name (optional)"
-                disabled={otpStep}
-              />
+                      <FieldError
+                        error={
+                          errors.last_name
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <FieldError
-                error={
-                  errors.middle_name
-                }
-              />
-            </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Middle Name
+                      <span className="ml-1 font-normal text-gray-400">
+                        optional
+                      </span>
+                    </label>
 
-            <div>
-              <div className="relative">
-
-                <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                <input
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none uppercase"
-                  type="text"
-                  name="student_id"
-                  value={
-                    form.student_id
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Student ID (2023-00000-BN-0)"
-                  maxLength={17}
-                  disabled={otpStep}
-                />
-              </div>
-
-              <FieldError
-                error={
-                  errors.student_id
-                }
-              />
-            </div>
-
-            <div>
-              <div className="relative">
-
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                <input
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Email address"
-                  disabled={otpStep}
-                />
-              </div>
-
-              <FieldError
-                error={errors.email}
-              />
-            </div>
-
-            <div>
-              <div className="relative">
-
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                <input
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                  type="tel"
-                  name="mobile_number"
-                  value={
-                    form.mobile_number
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Mobile number (09XXXXXXXXX)"
-                  disabled={otpStep}
-                />
-              </div>
-
-              <FieldError
-                error={
-                  errors.mobile_number
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-
-                <Calendar className="inline w-3.5 h-3.5 -mt-0.5 mr-1 text-gray-400" />
-
-                Birthday
-              </label>
-
-              <p className="text-[11px] text-gray-400 mb-2">
-                Month / Day / Year
-              </p>
-
-              <div className="grid grid-cols-12 gap-2">
-
-                <div className="col-span-5">
-
-                  <label className="block text-[10px] text-gray-500 mb-1">
-                    Month
-                  </label>
-
-                  <select
-                    className={
-                      selectClass
-                    }
-                    name="dobMonth"
-                    value={
-                      form.dobMonth
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    disabled={
-                      otpStep
-                    }
-                  >
-                    <option value="">
-                      Month
-                    </option>
-
-                    {months.map(
-                      (month) => (
-                        <option
-                          key={
-                            month.value
-                          }
-                          value={
-                            month.value
-                          }
-                        >
-                          {
-                            month.label
-                          }
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-
-                <div className="col-span-3">
-
-                  <label className="block text-[10px] text-gray-500 mb-1">
-                    Day
-                  </label>
-
-                  <select
-                    className={
-                      selectClass
-                    }
-                    name="dobDay"
-                    value={
-                      form.dobDay
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    disabled={
-                      otpStep
-                    }
-                  >
-                    <option value="">
-                      Day
-                    </option>
-
-                    {days.map(
-                      (day) => (
-                        <option
-                          key={day}
-                          value={day}
-                        >
-                          {day}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-
-                <div className="col-span-4">
-
-                  <label className="block text-[10px] text-gray-500 mb-1">
-                    Year
-                  </label>
-
-                  <select
-                    className={
-                      selectClass
-                    }
-                    name="dobYear"
-                    value={
-                      form.dobYear
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    disabled={
-                      otpStep
-                    }
-                  >
-                    <option value="">
-                      Year
-                    </option>
-
-                    {years.map(
-                      (year) => (
-                        <option
-                          key={year}
-                          value={year}
-                        >
-                          {year}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <FieldError
-                error={
-                  errors.birthday
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Gender
-              </label>
-
-              <div className="grid grid-cols-3 gap-2">
-
-                {[
-                  'male',
-                  'female',
-                  'other',
-                ].map((gender) => (
-                  <label
-                    key={gender}
-                    className={`cursor-pointer flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-sm font-medium transition ${
-                      form.gender ===
-                      gender
-                        ? 'border-maroon-800 bg-maroon-50 text-maroon-800'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
                     <input
-                      type="radio"
-                      name="gender"
-                      value={gender}
-                      checked={
-                        form.gender ===
-                        gender
+                      className={
+                        inputClass
+                      }
+                      type="text"
+                      name="middle_name"
+                      value={
+                        form.middle_name
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      placeholder="Middle name"
+                      autoComplete="additional-name"
+                    />
+
+                    <FieldError
+                      error={
+                        errors.middle_name
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Student ID
+                    </label>
+
+                    <div className="relative">
+                      <Hash className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+                      <input
+                        className={`${iconInputClass} uppercase`}
+                        type="text"
+                        name="student_id"
+                        value={
+                          form.student_id
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="2023-00000-BN-0"
+                        maxLength={
+                          17
+                        }
+                        autoComplete="username"
+                      />
+                    </div>
+
+                    <FieldError
+                      error={
+                        errors.student_id
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-gray-600">
+                      <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                      Birthday
+                    </label>
+
+                    <p className="mb-2 text-[11px] text-gray-400">
+                      Month / Day / Year
+                    </p>
+
+                    <div className="grid grid-cols-[1.35fr_0.75fr_1fr] gap-2">
+                      <select
+                        className={
+                          selectClass
+                        }
+                        name="dobMonth"
+                        value={
+                          form.dobMonth
+                        }
+                        onChange={
+                          handleChange
+                        }
+                      >
+                        <option value="">
+                          Month
+                        </option>
+
+                        {months.map(
+                          (
+                            month
+                          ) => (
+                            <option
+                              key={
+                                month.value
+                              }
+                              value={
+                                month.value
+                              }
+                            >
+                              {
+                                month.label
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <select
+                        className={
+                          selectClass
+                        }
+                        name="dobDay"
+                        value={
+                          form.dobDay
+                        }
+                        onChange={
+                          handleChange
+                        }
+                      >
+                        <option value="">
+                          Day
+                        </option>
+
+                        {birthDays.map(
+                          (day) => (
+                            <option
+                              key={
+                                day
+                              }
+                              value={String(
+                                day
+                              ).padStart(
+                                2,
+                                '0'
+                              )}
+                            >
+                              {
+                                day
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <select
+                        className={
+                          selectClass
+                        }
+                        name="dobYear"
+                        value={
+                          form.dobYear
+                        }
+                        onChange={
+                          handleChange
+                        }
+                      >
+                        <option value="">
+                          Year
+                        </option>
+
+                        {birthYears.map(
+                          (year) => (
+                            <option
+                              key={
+                                year
+                              }
+                              value={
+                                year
+                              }
+                            >
+                              {
+                                year
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+
+                    <FieldError
+                      error={
+                        errors.birthday
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold text-gray-600">
+                      Gender
+                    </label>
+
+                    <div className="inline-flex w-full rounded-xl bg-gray-100 p-1">
+                      {[
+                        {
+                          value:
+                            'male',
+                          label:
+                            'Male',
+                        },
+                        {
+                          value:
+                            'female',
+                          label:
+                            'Female',
+                        },
+                        {
+                          value:
+                            'other',
+                          label:
+                            'Other',
+                        },
+                      ].map(
+                        (
+                          option
+                        ) => (
+                          <label
+                            key={
+                              option.value
+                            }
+                            className={`flex flex-1 cursor-pointer items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                              form.gender ===
+                              option.value
+                                ? 'bg-white text-maroon-800 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-800'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="gender"
+                              value={
+                                option.value
+                              }
+                              checked={
+                                form.gender ===
+                                option.value
+                              }
+                              onChange={
+                                handleChange
+                              }
+                              className="sr-only"
+                            />
+
+                            {
+                              option.label
+                            }
+                          </label>
+                        )
+                      )}
+                    </div>
+
+                    <FieldError
+                      error={
+                        errors.gender
+                      }
+                    />
+                  </div>
+                </section>
+
+                {/* Academic */}
+                <section className="space-y-4 rounded-2xl border border-gray-200 p-4">
+                  <SectionTitle
+                    icon={
+                      GraduationCap
+                    }
+                    title="Academic Information"
+                    description="Select your current course, year level, and section."
+                  />
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        Course
+                      </label>
+
+                      <select
+                        className={
+                          selectClass
+                        }
+                        name="course"
+                        value={
+                          form.course
+                        }
+                        onChange={
+                          handleChange
+                        }
+                      >
+                        <option value="">
+                          Select course
+                        </option>
+
+                        {courses.map(
+                          (
+                            course
+                          ) => (
+                            <option
+                              key={
+                                course.value
+                              }
+                              value={
+                                course.value
+                              }
+                            >
+                              {
+                                course.label
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <FieldError
+                        error={
+                          errors.course
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        Year Level
+                      </label>
+
+                      <select
+                        className={
+                          selectClass
+                        }
+                        name="year"
+                        value={
+                          form.year
+                        }
+                        onChange={
+                          handleChange
+                        }
+                      >
+                        <option value="">
+                          Select year
+                        </option>
+
+                        {yearLevels.map(
+                          (year) => (
+                            <option
+                              key={
+                                year
+                              }
+                              value={
+                                year
+                              }
+                            >
+                              {
+                                year
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+
+                      <FieldError
+                        error={
+                          errors.year
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Section
+                    </label>
+
+                    <select
+                      className={
+                        selectClass
+                      }
+                      name="section"
+                      value={
+                        form.section
                       }
                       onChange={
                         handleChange
                       }
                       disabled={
-                        otpStep
+                        !form.year
                       }
-                      className="sr-only"
-                    />
-
-                    {gender
-                      .charAt(0)
-                      .toUpperCase() +
-                      gender.slice(1)}
-                  </label>
-                ))}
-              </div>
-
-              <FieldError
-                error={
-                  errors.gender
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-
-              <div>
-                <select
-                  className={
-                    selectClass
-                  }
-                  name="course"
-                  value={
-                    form.course
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  disabled={otpStep}
-                >
-                  <option value="">
-                    Course
-                  </option>
-
-                  {courses.map(
-                    (course) => (
-                      <option
-                        key={
-                          course.value
-                        }
-                        value={
-                          course.value
-                        }
-                      >
-                        {
-                          course.label
-                        }
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <FieldError
-                  error={
-                    errors.course
-                  }
-                />
-              </div>
-
-              <div>
-                <select
-                  className={
-                    selectClass
-                  }
-                  name="year"
-                  value={
-                    form.year
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  disabled={otpStep}
-                >
-                  <option value="">
-                    Year level
-                  </option>
-
-                  {[
-                    '1st Year',
-                    '2nd Year',
-                    '3rd Year',
-                    '4th Year',
-                  ].map(
-                    (year) => (
-                      <option
-                        key={year}
-                        value={year}
-                      >
-                        {year}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <FieldError
-                  error={
-                    errors.year
-                  }
-                />
-              </div>
-            </div>
-
-            <div>
-              <select
-                className={
-                  selectClass
-                }
-                name="section"
-                value={
-                  form.section
-                }
-                onChange={
-                  handleChange
-                }
-                disabled={
-                  !form.year ||
-                  otpStep
-                }
-              >
-                <option value="">
-                  {form.year
-                    ? 'Section'
-                    : 'Select year level first'}
-                </option>
-
-                {sections.map(
-                  (section) => (
-                    <option
-                      key={section}
-                      value={section}
                     >
-                      {section}
-                    </option>
-                  )
-                )}
-              </select>
+                      <option value="">
+                        {form.year
+                          ? 'Select section'
+                          : 'Select year level first'}
+                      </option>
 
-              <FieldError
-                error={
-                  errors.section
-                }
-              />
-            </div>
+                      {sections.map(
+                        (
+                          section
+                        ) => (
+                          <option
+                            key={
+                              section
+                            }
+                            value={
+                              section
+                            }
+                          >
+                            {
+                              section
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FieldError
+                      error={
+                        errors.section
+                      }
+                    />
+                  </div>
 
-              <div>
-                <div className="relative">
+                  <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-[11px] leading-5 text-blue-700">
+                    Course and section options are currently based on the registration setup. Later, these can be managed from the clinic/admin side without changing the student form.
+                  </div>
+                </section>
 
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                  <input
-                    className="w-full border border-gray-200 rounded-xl pl-10 pr-10 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                    type={
-                      showPassword
-                        ? 'text'
-                        : 'password'
-                    }
-                    name="password"
-                    value={
-                      form.password
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="New password"
-                    disabled={
-                      otpStep
-                    }
+                {/* Contact */}
+                <section className="space-y-4 rounded-2xl border border-gray-200 p-4">
+                  <SectionTitle
+                    icon={Mail}
+                    title="Contact Information"
+                    description="Your email is used for OTP verification and clinic notifications."
                   />
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword(
-                        !showPassword
-                      )
-                    }
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 p-1 hover:bg-gray-100 rounded-lg"
-                  >
-                    {showPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Email Address
+                    </label>
 
-                <FieldError
-                  error={
-                    errors.password
-                  }
-                />
-              </div>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
-              <div>
-                <div className="relative">
+                      <input
+                        className={
+                          iconInputClass
+                        }
+                        type="text"
+                        name="email"
+                        value={
+                          form.email
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="name@gmail.com"
+                        autoComplete="email"
+                        inputMode="email"
+                      />
+                    </div>
 
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                  <input
-                    className="w-full border border-gray-200 rounded-xl pl-10 pr-10 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
-                    type={
-                      showConfirmPassword
-                        ? 'text'
-                        : 'password'
-                    }
-                    name="password_confirmation"
-                    value={
-                      form.password_confirmation
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Confirm password"
-                    disabled={
-                      otpStep
-                    }
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(
-                        !showConfirmPassword
-                      )
-                    }
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 p-1 hover:bg-gray-100 rounded-lg"
-                  >
-                    {showConfirmPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-
-                <FieldError
-                  error={
-                    errors.password_confirmation
-                  }
-                />
-              </div>
-            </div>
-
-            {form.password &&
-              form.password ===
-                form.password_confirmation && (
-                <p className="text-green-600 text-xs flex items-center gap-1 -mt-2">
-                  <CheckCircle className="w-3 h-3" />
-                  Passwords match
-                </p>
-              )}
-
-            {otpStep && (
-              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-
-                <div className="flex items-start gap-3">
-
-                  <ShieldCheck className="w-5 h-5 text-maroon-800 mt-0.5 flex-shrink-0" />
-
-                  <div className="flex-1">
-
-                    <p className="font-semibold text-maroon-900 text-sm">
-                      Verify your email
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Example: name@gmail.com
                     </p>
 
-                    <p className="text-xs text-gray-600 mt-1">
-                      We sent a
-                      6-digit code to{' '}
-                      <strong>
-                        {form.email}
+                    <FieldError
+                      error={
+                        errors.email
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-gray-600">
+                      Mobile Number
+                    </label>
+
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+                      <input
+                        className={
+                          iconInputClass
+                        }
+                        type="tel"
+                        name="mobile_number"
+                        value={
+                          form.mobile_number
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                        autoComplete="tel"
+                        inputMode="tel"
+                      />
+                    </div>
+
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Accepted: 09XXXXXXXXX or +639XXXXXXXXX
+                    </p>
+
+                    <FieldError
+                      error={
+                        errors.mobile_number
+                      }
+                    />
+                  </div>
+                </section>
+
+                {/* Security */}
+                <section className="space-y-4 rounded-2xl border border-gray-200 p-4">
+                  <SectionTitle
+                    icon={Lock}
+                    title="Account Security"
+                    description="Create a secure password for your CareLink account."
+                  />
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        Password
+                      </label>
+
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+                        <input
+                          className={`${iconInputClass} pr-11`}
+                          type={
+                            showPassword
+                              ? 'text'
+                              : 'password'
+                          }
+                          name="password"
+                          value={
+                            form.password
+                          }
+                          onChange={
+                            handleChange
+                          }
+                          placeholder="Create password"
+                          autoComplete="new-password"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPassword(
+                              (
+                                current
+                              ) =>
+                                !current
+                            )
+                          }
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                          aria-label={
+                            showPassword
+                              ? 'Hide password'
+                              : 'Show password'
+                          }
+                        >
+                          {showPassword ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <EyeOff className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      <FieldError
+                        error={
+                          errors.password
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">
+                        Confirm Password
+                      </label>
+
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+                        <input
+                          className={`${iconInputClass} pr-11`}
+                          type={
+                            showConfirmPassword
+                              ? 'text'
+                              : 'password'
+                          }
+                          name="password_confirmation"
+                          value={
+                            form.password_confirmation
+                          }
+                          onChange={
+                            handleChange
+                          }
+                          placeholder="Confirm password"
+                          autoComplete="new-password"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(
+                              (
+                                current
+                              ) =>
+                                !current
+                            )
+                          }
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                          aria-label={
+                            showConfirmPassword
+                              ? 'Hide password'
+                              : 'Show password'
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <EyeOff className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      <FieldError
+                        error={
+                          errors.password_confirmation
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {form.password && (
+                    <div className="rounded-xl bg-gray-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-gray-600">
+                          Password strength
+                        </p>
+
+                        <span
+                          className={`text-xs font-bold ${
+                            passwordStrength.score <=
+                            1
+                              ? 'text-red-600'
+                              : passwordStrength.score <=
+                                  3
+                                ? 'text-yellow-600'
+                                : 'text-green-600'
+                          }`}
+                        >
+                          {
+                            passwordStrength.label
+                          }
+                        </span>
+                      </div>
+
+                      <div className="mt-2 grid grid-cols-5 gap-1">
+                        {[
+                          1,
+                          2,
+                          3,
+                          4,
+                          5,
+                        ].map(
+                          (
+                            level
+                          ) => (
+                            <div
+                              key={
+                                level
+                              }
+                              className={`h-1.5 rounded-full ${
+                                level <=
+                                passwordStrength.score
+                                  ? passwordStrength.score <=
+                                    1
+                                    ? 'bg-red-500'
+                                    : passwordStrength.score <=
+                                        3
+                                      ? 'bg-yellow-500'
+                                      : 'bg-green-500'
+                                  : 'bg-gray-200'
+                              }`}
+                            />
+                          )
+                        )}
+                      </div>
+
+                      <p className="mt-2 text-[11px] leading-5 text-gray-500">
+                        Use at least 8 characters. A mix of uppercase, lowercase, numbers, and symbols is stronger.
+                      </p>
+                    </div>
+                  )}
+
+                  {form.password &&
+                    form.password_confirmation &&
+                    form.password ===
+                      form.password_confirmation && (
+                      <p className="flex items-center gap-1 text-xs font-medium text-green-600">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Passwords match
+                      </p>
+                    )}
+
+                  <div>
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        name="agree_terms"
+                        checked={
+                          form.agree_terms
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        className="mt-1 h-4 w-4 rounded border-gray-300 accent-maroon-800"
+                      />
+
+                      <p className="text-xs leading-5 text-gray-500">
+                        I have read and agree to the{' '}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLegalModal(
+                              'terms'
+                            )
+                          }
+                          className="font-semibold text-maroon-700 hover:underline"
+                        >
+                          Terms of Service
+                        </button>{' '}
+                        and{' '}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLegalModal(
+                              'privacy'
+                            )
+                          }
+                          className="font-semibold text-maroon-700 hover:underline"
+                        >
+                          Privacy Policy
+                        </button>
+                        .
+                      </p>
+                    </div>
+
+                    <FieldError
+                      error={
+                        errors.agree_terms
+                      }
+                    />
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* OTP */}
+            {otpStep && (
+              <section className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-maroon-800" />
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-maroon-900">
+                      Verify your email
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                      We sent a 6-digit verification code to{' '}
+                      <strong className="break-all">
+                        {
+                          form.email
+                        }
                       </strong>
-                      . The code is
-                      valid for{' '}
+                      . The code is valid for{' '}
                       {OTP_EXPIRY_MINUTES}{' '}
                       minutes.
                     </p>
 
                     <input
-                      className="w-full mt-3 border border-yellow-300 rounded-xl px-3.5 py-2.5 text-center text-lg tracking-[0.5em] font-bold bg-white focus:ring-2 focus:ring-maroon-500 focus:outline-none"
+                      className="mt-4 w-full rounded-xl border border-yellow-300 bg-white px-3.5 py-3 text-center text-xl font-bold tracking-[0.45em] focus:outline-none focus:ring-2 focus:ring-maroon-500"
                       type="text"
                       inputMode="numeric"
-                      maxLength={6}
+                      autoComplete="one-time-code"
+                      maxLength={
+                        6
+                      }
                       value={otp}
-                      onChange={(e) => {
+                      onChange={(
+                        e
+                      ) => {
                         setOtp(
                           e.target.value
                             .replace(
@@ -1479,21 +2126,16 @@ const Register = () => {
                             )
                         );
 
-                        if (
-                          errors.otp
-                        ) {
-                          setErrors(
-                            (
-                              previous
-                            ) => ({
-                              ...previous,
-                              otp: '',
-                            })
-                          );
-                        }
+                        setErrors(
+                          (
+                            previous
+                          ) => ({
+                            ...previous,
+                            otp: '',
+                          })
+                        );
                       }}
                       placeholder="000000"
-                      aria-label="Email verification code"
                     />
 
                     <FieldError
@@ -1502,8 +2144,7 @@ const Register = () => {
                       }
                     />
 
-                    <div className="mt-3 text-center">
-
+                    <div className="mt-4 text-center">
                       {otpCooldown >
                       0 ? (
                         <p className="text-xs text-gray-500">
@@ -1524,12 +2165,12 @@ const Register = () => {
                           disabled={
                             resendingOtp
                           }
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-maroon-800 hover:text-maroon-950 hover:underline disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-maroon-800 hover:underline disabled:opacity-50"
                         >
                           {resendingOtp ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className="h-4 w-4" />
                           )}
 
                           {resendingOtp
@@ -1540,45 +2181,7 @@ const Register = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {!otpStep && (
-              <div>
-                <div className="flex items-start space-x-2">
-
-                  <input
-                    type="checkbox"
-                    name="agree_terms"
-                    checked={
-                      form.agree_terms
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    className="mt-1 w-4 h-4 rounded border-gray-300 text-maroon-800 focus:ring-maroon-500"
-                  />
-
-                  <label className="text-xs text-gray-500">
-                    I agree to the{' '}
-                    <span className="text-maroon-600 font-medium">
-                      Terms of
-                      Service
-                    </span>{' '}
-                    and{' '}
-                    <span className="text-maroon-600 font-medium">
-                      Privacy
-                      Policy
-                    </span>
-                  </label>
-                </div>
-
-                <FieldError
-                  error={
-                    errors.agree_terms
-                  }
-                />
-              </div>
+              </section>
             )}
 
             <button
@@ -1587,11 +2190,11 @@ const Register = () => {
                 loading ||
                 resendingOtp
               }
-              className="w-full py-3 bg-maroon-800 hover:bg-maroon-900 text-white font-bold rounded-xl transition flex items-center justify-center space-x-2 disabled:opacity-60 shadow-lg shadow-maroon-800/25"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-maroon-800 px-4 py-3 font-bold text-white shadow-lg shadow-maroon-800/25 transition hover:bg-maroon-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
 
                   <span>
                     {otpStep
@@ -1600,28 +2203,34 @@ const Register = () => {
                   </span>
                 </>
               ) : (
-                <span>
-                  {otpStep
-                    ? 'Verify & Create Account'
-                    : 'Sign Up'}
-                </span>
+                <>
+                  <span>
+                    {otpStep
+                      ? 'Verify & Create Account'
+                      : 'Continue to Email Verification'}
+                  </span>
+
+                  {!otpStep && (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </>
               )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-5">
-            Already have an
-            account?{' '}
+          <p className="mt-5 text-center text-sm text-gray-500">
+            Already have an account?{' '}
+
             <Link
               to="/login"
-              className="text-maroon-800 font-semibold hover:underline"
+              className="font-semibold text-maroon-800 hover:underline"
             >
               Log in
             </Link>
           </p>
         </div>
 
-        <p className="text-center text-white/50 text-xs mt-4">
+        <p className="mt-4 text-center text-xs text-white/60">
           <Link
             to="/"
             className="hover:underline"
@@ -1630,6 +2239,153 @@ const Register = () => {
           </Link>
         </p>
       </div>
+
+      {/* Terms / Privacy Modal */}
+      {legalModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() =>
+            setLegalModal(null)
+          }
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(
+              event
+            ) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-maroon-800" />
+
+                <h2 className="font-bold text-gray-900">
+                  {legalModal ===
+                  'terms'
+                    ? 'Terms of Service'
+                    : 'Privacy Policy'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setLegalModal(
+                    null
+                  )
+                }
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[65vh] overflow-y-auto p-5">
+              {legalModal ===
+              'terms' ? (
+                <div className="space-y-4 text-sm leading-6 text-gray-600">
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Account Use
+                    </h3>
+
+                    <p className="mt-1">
+                      Your CareLink account is intended for your own student clinic transactions and health-service access.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Accurate Information
+                    </h3>
+
+                    <p className="mt-1">
+                      Information submitted during registration should match your school records and should be kept accurate.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Account Security
+                    </h3>
+
+                    <p className="mt-1">
+                      Keep your account credentials private and do not intentionally allow another person to use your CareLink account.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Clinic Services
+                    </h3>
+
+                    <p className="mt-1">
+                      Appointments, QR check-in, queueing, and health records are subject to clinic procedures and availability.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 text-sm leading-6 text-gray-600">
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Information Collected
+                    </h3>
+
+                    <p className="mt-1">
+                      CareLink may process student identity, contact details, appointment information, and clinic-related health records needed to provide campus health services.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Purpose
+                    </h3>
+
+                    <p className="mt-1">
+                      Information is used for account verification, clinic appointments, check-in and queue management, notifications, and authorized health-service documentation.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Access
+                    </h3>
+
+                    <p className="mt-1">
+                      Clinic-related information should only be accessed by the student and authorized clinic personnel according to system permissions.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Data Accuracy
+                    </h3>
+
+                    <p className="mt-1">
+                      Contact information and self-declared profile information should be kept updated so the clinic can reach you when necessary.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 p-4">
+              <button
+                type="button"
+                onClick={() =>
+                  setLegalModal(
+                    null
+                  )
+                }
+                className="w-full rounded-xl bg-maroon-800 py-2.5 text-sm font-semibold text-white transition hover:bg-maroon-900"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
