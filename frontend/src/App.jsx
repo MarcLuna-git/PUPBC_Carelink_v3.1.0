@@ -40,6 +40,7 @@ import NurseRecords from './pages/Admin/Records/NurseRecords';
 import NurseNotifications from './pages/Admin/Notifications/NurseNotifications';
 import NurseAnnouncements from './pages/Admin/Announcements/NurseAnnouncements';
 import NurseSettings from './pages/Admin/Settings/NurseSettings';
+import CourseManagement from './pages/Admin/Academic/CourseManagement';
 
 import AdminLayout from './layouts/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -683,6 +684,11 @@ function App() {
             <Route
               path="students"
               element={<NurseStudents />}
+            />
+
+            <Route
+              path="academic"
+              element={<CourseManagement />}
             />
 
             <Route

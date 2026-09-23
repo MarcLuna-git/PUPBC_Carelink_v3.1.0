@@ -4,7 +4,12 @@ namespace App\Http\Controllers\Api\Nurse;
 
 use App\Http\Controllers\Controller;
 use App\Models\Medicine;
+use App\Models\MedicineBatch;
+use App\Models\MedicineStockMovement;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
 {
@@ -80,6 +85,98 @@ class MedicineController extends Controller
         return response()->json(['success' => true, 'data' => $medicine]);
     }
 
+    public function batches($id)
+    {
+        Medicine::findOrFail($id);
+        return response()->json(['success' => true, 'data' => MedicineBatch::where('medicine_id', $id)->orderBy('expiry_date')->get()]);
+    }
+
+    public function movements(Request $request, $id)
+    {
+        Medicine::findOrFail($id);
+        return response()->json(['success' => true, 'data' => MedicineStockMovement::with(['batch', 'performer:id,first_name,last_name'])->where('medicine_id', $id)->latest()->paginate(50)]);
+    }
+
+    public function receiveBatch(Request $request, $id)
+    {
+        $data = $request->validate([
+            'lot_number' => 'required|string|max:100',
+            'quantity' => 'required|integer|min:1',
+            'expiry_date' => 'nullable|date',
+            'received_at' => 'nullable|date',
+            'supplier' => 'nullable|string|max:150',
+            'reference' => 'nullable|string|max:150',
+        ]);
+
+        return DB::transaction(function () use ($data, $id) {
+            $medicine = Medicine::lockForUpdate()->findOrFail($id);
+            $batch = MedicineBatch::firstOrCreate(
+                ['medicine_id' => $medicine->id, 'lot_number' => $data['lot_number']],
+                array_merge($data, ['medicine_id' => $medicine->id])
+            );
+            if (!$batch->wasRecentlyCreated) {
+                $batch->increment('quantity', $data['quantity']);
+            }
+            $medicine->increment('quantity', $data['quantity']);
+            $this->recordMovement($medicine, $batch, 'stock_in', $data['quantity'], $data['reference'] ?? null);
+            $this->notifyIfLowStock($medicine->fresh());
+            return response()->json(['success' => true, 'data' => $batch->fresh()], 201);
+        }, 3);
+    }
+
+    public function moveStock(Request $request, $id)
+    {
+        $data = $request->validate([
+            'movement_type' => 'required|string|in:dispensed,wasted,expired,adjustment',
+            'quantity' => 'required|integer|min:1',
+            'batch_id' => 'nullable|uuid|exists:medicine_batches,id',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        return DB::transaction(function () use ($data, $id) {
+            $medicine = Medicine::lockForUpdate()->findOrFail($id);
+            $batch = null;
+            if (!empty($data['batch_id'])) {
+                $batch = MedicineBatch::where('medicine_id', $medicine->id)->lockForUpdate()->findOrFail($data['batch_id']);
+                abort_if($batch->quantity < $data['quantity'], 422, 'Insufficient batch stock.');
+                $batch->decrement('quantity', $data['quantity']);
+            }
+            abort_if($medicine->quantity < $data['quantity'], 422, 'Insufficient medicine stock.');
+            $medicine->decrement('quantity', $data['quantity']);
+            $this->recordMovement($medicine, $batch, $data['movement_type'], $data['quantity'], $data['reason']);
+            $this->notifyIfLowStock($medicine->fresh());
+            return response()->json(['success' => true, 'data' => $medicine->fresh()]);
+        }, 3);
+    }
+
+    private function recordMovement(Medicine $medicine, $batch, $type, $quantity, $reason = null)
+    {
+        return MedicineStockMovement::create([
+            'medicine_id' => $medicine->id,
+            'medicine_batch_id' => $batch ? $batch->id : null,
+            'movement_type' => $type,
+            'quantity' => $quantity,
+            'reason' => $reason,
+            'performed_by' => auth()->id(),
+        ]);
+    }
+
+    private function notifyIfLowStock(Medicine $medicine)
+    {
+        if ($medicine->quantity > $medicine->minimum_stock) {
+            return;
+        }
+        foreach (User::where('role', 'nurse')->get(['id']) as $nurse) {
+            Notification::create([
+                'user_id' => $nurse->id,
+                'type' => 'medicine_low_stock',
+                'title' => 'Low Medicine Stock',
+                'message' => $medicine->name . ' has reached its minimum stock level.',
+                'data' => ['medicine_id' => $medicine->id, 'quantity' => $medicine->quantity],
+            ]);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         $medicine = Medicine::findOrFail($id);
@@ -111,8 +208,12 @@ class MedicineController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $medicine = Medicine::findOrFail($id);
-        $medicine->increment('quantity', $request->quantity);
+        $medicine = DB::transaction(function () use ($request, $id) {
+            $medicine = Medicine::lockForUpdate()->findOrFail($id);
+            $medicine->increment('quantity', $request->quantity);
+            $this->recordMovement($medicine, null, 'stock_in', $request->quantity, 'Legacy stock receipt');
+            return $medicine->fresh();
+        }, 3);
 
         return response()->json([
             'success' => true,
@@ -127,16 +228,16 @@ class MedicineController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $medicine = Medicine::findOrFail($id);
-
-        if ($medicine->quantity < $request->quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Insufficient stock.'
-            ], 400);
-        }
-
-        $medicine->decrement('quantity', $request->quantity);
+        $medicine = DB::transaction(function () use ($request, $id) {
+            $medicine = Medicine::lockForUpdate()->findOrFail($id);
+            if ($medicine->quantity < $request->quantity) {
+                abort(422, 'Insufficient stock.');
+            }
+            $medicine->decrement('quantity', $request->quantity);
+            $this->recordMovement($medicine, null, 'adjustment', $request->quantity, 'Legacy stock reduction');
+            $this->notifyIfLowStock($medicine->fresh());
+            return $medicine->fresh();
+        }, 3);
 
         return response()->json([
             'success' => true,

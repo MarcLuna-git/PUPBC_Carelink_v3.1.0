@@ -81,6 +81,7 @@ class ConsultationController extends Controller
     public function update(Request $request, $id)
     {
         $consultation = Consultation::findOrFail($id);
+        abort_unless($consultation->status !== 'completed', 422, 'Completed consultations are read-only.');
         $consultation->update($request->validate([
             'chief_complaint' => 'sometimes|required|string|max:2000', 'vital_signs' => 'nullable|array:bp,hr,rr,temp,o2_sat', 'vital_signs.*' => 'nullable|string|max:50',
             'general_remarks' => 'nullable|string|max:5000', 'medical_certificate' => 'sometimes|boolean', 'medical_certificate_ref' => 'nullable|string|max:191',

@@ -659,6 +659,14 @@ Route::middleware([
                 );
 
                 Route::patch(
+                    '/appointments/{id}/cancel',
+                    [
+                        NurseAppointmentController::class,
+                        'cancel',
+                    ]
+                );
+
+                Route::patch(
                     '/appointments/{id}/reschedule',
                     [
                         NurseAppointmentController::class,
@@ -706,6 +714,22 @@ Route::middleware([
                         'healthProfile',
                     ]
                 );
+
+                Route::patch('/students/{id}/medical-record', [NurseStudentController::class, 'updateMedicalRecord']);
+
+                Route::patch('/students/{id}/archive', [NurseStudentController::class, 'archive']);
+                Route::patch('/students/{id}/restore', [NurseStudentController::class, 'restore']);
+
+                Route::get('/academic-periods', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'periods']);
+                Route::post('/academic-periods', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'storePeriod']);
+                Route::put('/academic-periods/{id}', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'updatePeriod']);
+                Route::get('/courses', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'courses']);
+                Route::post('/courses', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'storeCourse']);
+                Route::put('/courses/{id}', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'updateCourse']);
+                Route::get('/course-sections', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'sections']);
+                Route::post('/course-sections', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'storeSection']);
+                Route::put('/course-sections/{id}', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'updateSection']);
+                Route::post('/student-enrollments', [\App\Http\Controllers\Api\Nurse\CourseManagementController::class, 'enroll']);
 
                 Route::get(
                     '/students/{id}/appointments',
@@ -843,6 +867,11 @@ Route::middleware([
                     '/medicines/{id}',
                     [MedicineController::class, 'show']
                 );
+
+                Route::get('/medicines/{id}/batches', [MedicineController::class, 'batches']);
+                Route::get('/medicines/{id}/movements', [MedicineController::class, 'movements']);
+                Route::post('/medicines/{id}/batches', [MedicineController::class, 'receiveBatch']);
+                Route::post('/medicines/{id}/movements', [MedicineController::class, 'moveStock']);
 
                 Route::put(
                     '/medicines/{id}',

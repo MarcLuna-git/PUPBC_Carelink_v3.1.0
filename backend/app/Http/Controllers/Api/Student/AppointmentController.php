@@ -145,13 +145,15 @@ class AppointmentController extends Controller
 
             if (
                 !$user ||
+                in_array($user->status, ['inactive', 'archived'], true) ||
                 !$user->healthProfile ||
                 !$user->healthProfile->isComplete()
             ) {
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Complete your health profile before booking.',
+                    'message' => $user && in_array($user->status, ['inactive', 'archived'], true)
+                        ? 'Your account is not eligible to book appointments.'
+                        : 'Complete your health profile before booking.',
                 ], 422);
             }
 

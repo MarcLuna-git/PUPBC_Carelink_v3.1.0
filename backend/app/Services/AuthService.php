@@ -44,7 +44,7 @@ class AuthService
             'section' => $data['section'] ?? null,
             'mobile_number' => $data['mobile_number'] ?? null,
             'email_verified_at' => now(),
-            'status' => 'active',
+            'status' => null,
         ]);
 
         $this->generateQRCode($user);
@@ -309,7 +309,7 @@ class AuthService
 
         if (
             !$user ||
-            $user->status !== 'active' ||
+            in_array($user->status, ['inactive', 'archived'], true) ||
             !$this->verifyPassword(
                 $password,
                 $user->password

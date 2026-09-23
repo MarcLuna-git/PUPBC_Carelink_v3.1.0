@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use App\Models\{User, Appointment, AppointmentCheckin, Consultation, HealthProfile, PasswordReset, PendingRegistration, Announcement, EmergencyEncounter};
+use App\Models\{User, Appointment, AppointmentCheckin, Consultation, HealthProfile, PasswordReset, PendingRegistration, Announcement, EmergencyEncounter, Medicine, MedicineBatch, MedicineStockMovement};
 use App\Services\AuthService;
 
 class CareLinkWorkflowTest extends TestCase
@@ -15,7 +15,7 @@ class CareLinkWorkflowTest extends TestCase
     use DatabaseTransactions;
     private function person($role = 'student')
     {
-        return User::create(['student_id' => 'TEST-' . Str::random(10), 'first_name' => 'Test', 'last_name' => 'Patient', 'email' => Str::uuid() . '@example.test', 'password' => Hash::make('TestPassword123!'), 'birthday' => '2002-05-15', 'role' => $role, 'status' => 'active']);
+        return User::create(['student_id' => 'TEST-' . Str::random(10), 'first_name' => 'Test', 'last_name' => 'Patient', 'email' => Str::uuid() . '@example.test', 'password' => Hash::make('TestPassword123!'), 'birthday' => '2002-05-15', 'role' => $role, 'status' => null]);
     }
     private function healthData()
     {
@@ -245,5 +245,129 @@ class CareLinkWorkflowTest extends TestCase
         [$student2,$appointment2]=$this->visit();
         $this->actingAs($this->person('nurse'),'api')->postJson('/api/nurse/queue/call-next')->assertOk();
         $this->actingAs($student2,'api')->patchJson('/api/student/appointments/'.$appointment2->id.'/cancel')->assertStatus(409);
+    }
+
+    public function test_nurse_can_cancel_pending_or_rejected_with_reason_and_notifies_student()
+    {
+        $nurse = $this->person('nurse');
+        $student = $this->person();
+        $pending = $this->appointment($student, 'pending', \Carbon\Carbon::tomorrow()->toDateString());
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/appointments/'.$pending->id.'/cancel', ['reason' => 'Clinic schedule unavailable'])->assertOk();
+        $this->assertSame('cancelled', $pending->fresh()->status);
+        $this->assertSame('Clinic schedule unavailable', $pending->fresh()->cancellation_reason);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'type' => 'appointment_cancelled']);
+
+        $rejected = $this->appointment($student, 'rejected', \Carbon\Carbon::tomorrow()->addDay()->toDateString());
+        $rejected->update(['rejection_reason' => 'No available slot']);
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/appointments/'.$rejected->id.'/cancel', ['reason' => 'Student request'])->assertOk();
+        $this->assertSame('cancelled', $rejected->fresh()->status);
+        $this->assertSame('No available slot', $rejected->fresh()->rejection_reason);
+    }
+
+    public function test_nurse_cannot_cancel_approved_appointment_or_without_reason()
+    {
+        $nurse = $this->person('nurse');
+        $student = $this->person();
+        $appointment = $this->appointment($student, 'approved', \Carbon\Carbon::tomorrow()->toDateString());
+
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/appointments/'.$appointment->id.'/cancel', [])->assertUnprocessable();
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/appointments/'.$appointment->id.'/cancel', ['reason' => 'Clinic closed'])->assertUnprocessable();
+        $this->assertSame('approved', $appointment->fresh()->status);
+    }
+
+    public function test_pending_appointments_expire_after_their_date_and_notify_students()
+    {
+        $student = $this->person();
+        $appointment = $this->appointment($student, 'pending', \Carbon\Carbon::yesterday()->toDateString());
+
+        $this->artisan('appointments:expire')->assertExitCode(0);
+
+        $this->assertSame('expired', $appointment->fresh()->status);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'type' => 'appointment_expired']);
+    }
+
+    public function test_archive_cancels_future_pending_appointments_and_restore_returns_null_status()
+    {
+        $nurse = $this->person('nurse');
+        $student = $this->person();
+        $appointment = $this->appointment($student, 'pending', \Carbon\Carbon::tomorrow()->toDateString());
+
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/students/'.$student->id.'/archive', ['reason' => 'Student is no longer enrolled'])->assertOk();
+        $this->assertSoftDeleted('users', ['id' => $student->id]);
+        $this->assertSame('archived', $student->fresh()->status);
+        $this->assertSame('cancelled', $appointment->fresh()->status);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'type' => 'student_archived']);
+
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/students/'.$student->id.'/restore')->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'status' => null, 'deleted_at' => null]);
+    }
+
+    public function test_archive_is_blocked_by_a_future_approved_appointment()
+    {
+        $nurse = $this->person('nurse');
+        $student = $this->person();
+        $this->appointment($student, 'approved', \Carbon\Carbon::tomorrow()->toDateString());
+
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/students/'.$student->id.'/archive', ['reason' => 'Archive requested'])->assertUnprocessable();
+        $this->assertNotSoftDeleted('users', ['id' => $student->id]);
+    }
+
+    public function test_nurse_can_update_only_medical_history_and_medications()
+    {
+        $nurse = $this->person('nurse');
+        $student = $this->person();
+        $profile = HealthProfile::create(array_merge($this->healthData(), ['user_id' => $student->id, 'allergy_details' => 'Pollen']));
+
+        $this->actingAs($nurse, 'api')->patchJson('/api/nurse/students/'.$student->id.'/medical-record', [
+            'medical_history' => ['Asthma'],
+            'medications' => 'Salbutamol',
+            'allergy_details' => 'Should not change',
+        ])->assertOk();
+
+        $profile = $profile->fresh();
+        $this->assertSame(['Asthma'], $profile->medical_history);
+        $this->assertSame('Salbutamol', $profile->medications);
+        $this->assertSame('Pollen', $profile->allergy_details);
+    }
+
+    public function test_completed_consultation_is_read_only()
+    {
+        $student = $this->person();
+        $nurse = $this->person('nurse');
+        $consultation = Consultation::create([
+            'user_id' => $student->id,
+            'nurse_id' => $nurse->id,
+            'chief_complaint' => 'Headache',
+            'status' => 'completed',
+        ]);
+
+        $this->actingAs($nurse, 'api')->putJson('/api/nurse/consultations/'.$consultation->id, ['chief_complaint' => 'Changed'])->assertUnprocessable();
+        $this->assertSame('Headache', $consultation->fresh()->chief_complaint);
+    }
+
+    public function test_medicine_batches_record_stock_movements_and_notify_nurses_when_low()
+    {
+        $nurse = $this->person('nurse');
+        $medicine = Medicine::create(['name' => 'Test Medicine', 'quantity' => 0, 'minimum_stock' => 5, 'unit' => 'tablet', 'added_by' => $nurse->id]);
+        $this->actingAs($nurse, 'api');
+
+        $batch = $this->postJson('/api/nurse/medicines/'.$medicine->id.'/batches', [
+            'lot_number' => 'LOT-001',
+            'quantity' => 10,
+            'expiry_date' => \Carbon\Carbon::tomorrow()->addYear()->toDateString(),
+            'supplier' => 'Optional Supplier',
+        ])->assertCreated()->json('data');
+
+        $this->postJson('/api/nurse/medicines/'.$medicine->id.'/movements', [
+            'movement_type' => 'dispensed',
+            'quantity' => 6,
+            'batch_id' => $batch['id'],
+            'reason' => 'Dispensed for clinic visit',
+        ])->assertOk();
+
+        $this->assertSame(4, $medicine->fresh()->quantity);
+        $this->assertSame(4, MedicineBatch::findOrFail($batch['id'])->quantity);
+        $this->assertSame(2, MedicineStockMovement::where('medicine_id', $medicine->id)->count());
+        $this->assertDatabaseHas('notifications', ['user_id' => $nurse->id, 'type' => 'medicine_low_stock']);
     }
 }
