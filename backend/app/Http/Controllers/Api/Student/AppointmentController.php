@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\AppointmentCheckin;
 use App\Models\AppointmentSlot;
+use App\Models\Notification;
 use App\Models\QRCode;
 use App\Services\ClinicQueue;
 use Carbon\Carbon;
@@ -573,6 +574,24 @@ class AppointmentController extends Controller
                 $appointment->update([
                     'status' =>
                         'cancelled',
+                ]);
+
+                // Notify the student only after a valid cancellation.
+                // This notification is saved in the same transaction.
+                Notification::create([
+                    'user_id' => $appointment->user_id,
+                    'type' => 'appointment_cancelled',
+                    'title' => 'Appointment cancelled',
+                    'message' => 'Your ' . $appointment->service
+                        . ' appointment on '
+                        . $appointment->appointment_date->format('M j, Y')
+                        . ' has been cancelled.',
+                    'data' => [
+                        'appointment_id' => $appointment->id,
+                        'reference_number' => $appointment->reference_number,
+                        'status' => 'cancelled',
+                    ],
+                    'read' => false,
                 ]);
 
                 Cache::forget(
