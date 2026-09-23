@@ -403,45 +403,14 @@ const StudentHomeRedirect = () => {
 
 /*
  * ============================================================
- * HEALTH PROFILE ONBOARDING
+ * HEALTH PROFILE FORM
  * ============================================================
  *
- * A completed Student should no longer be sent back to the
- * onboarding form simply because localStorage is stale.
- *
- * If the DB says complete:
- *   → Appointments
- *
- * If incomplete:
- *   → show HealthProfile
+ * Both incomplete and completed students can open the form.
+ * HealthProfile loads the saved record itself. Completion is
+ * required only for clinic services, never for editing this form.
  */
 const HealthProfileOnboardingRoute = () => {
-  const {
-    loading,
-    completed,
-    error,
-    retry,
-  } = useStudentHealthProfileStatus();
-
-  if (loading) {
-    return (
-      <StudentRouteLoading message="Checking your Health Profile..." />
-    );
-  }
-
-  if (error) {
-    return <StudentRouteStatusError retry={retry} />;
-  }
-
-  if (completed) {
-    return (
-      <Navigate
-        to="/student/appointments"
-        replace
-      />
-    );
-  }
-
   return <HealthProfile />;
 };
 
@@ -572,9 +541,7 @@ function App() {
             />
 
             {/*
-              First-time Health Profile onboarding.
-
-              Completed students are redirected to Appointments.
+              Health Profile completion and editing for all students.
             */}
             <Route
               path="health-profile"
