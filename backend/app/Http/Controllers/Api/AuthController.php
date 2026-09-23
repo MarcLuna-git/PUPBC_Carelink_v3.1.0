@@ -394,88 +394,131 @@ class AuthController extends Controller
         }
     }
 
-    public function login(Request $request): JsonResponse
-    {
-        try {
-            $request->merge([
-                'student_id' => strtoupper(
-                    trim(
-                        (string) $request->input(
-                            'student_id',
-                            ''
-                        )
-                    )
-                ),
-            ]);
+    
+public function login(Request $request): JsonResponse
+{
+    $studentId = strtoupper(
+        trim((string) $request->input('student_id', ''))
+    );
 
-            $data = $request->validate(
-                [
-                    'student_id' => [
-                        'required',
-                        'string',
-                        'max:17',
-                        'regex:/^\d{4}-\d{5}-BN-[01]$/',
-                    ],
+    $request->merge([
+        'student_id' => $studentId,
+    ]);
 
-                    'birthday' => [
-                        'required',
-                        'date_format:Y-m-d',
-                        'before_or_equal:today',
-                    ],
+    // Separate limits for each Student ID + IP address.
+    $identity = hash(
+        'sha256',
+        $studentId . '|' . $request->ip()
+    );
 
-                    'password' => [
-                        'required',
-                        'string',
-                    ],
-                ],
-                [
-                    'student_id.required' =>
-                        'Student ID is required.',
+    $attemptKey = 'student-login:attempts:' . $identity;
+    $lockKey = 'student-login:lock:' . $identity;
 
-                    'student_id.regex' =>
-                        'Student ID format is invalid.',
+    $limiter = app(\Illuminate\Cache\RateLimiter::class);
 
-                    'birthday.required' =>
-                        'Birthday is required.',
+    // Block requests while the 60-second lock is active.
+    if ($limiter->tooManyAttempts($lockKey, 1)) {
+        $seconds = max(1, $limiter->availableIn($lockKey));
 
-                    'birthday.date_format' =>
-                        'Birthday format is invalid.',
+        return response()->json([
+            'success' => false,
+            'locked' => true,
+            'message' => 'Too many incorrect login attempts. Please try again in ' .
+                $seconds . ' seconds.',
+            'retry_after' => $seconds,
+            'attempts_remaining' => 0,
+        ], 429)->header('Retry-After', (string) $seconds);
+    }
 
-                    'birthday.before_or_equal' =>
-                        'Birthday cannot be in the future.',
+    try {
+        $data = $request->validate([
+            'student_id' => [
+                'required',
+                'string',
+                'max:17',
+                'regex:/^\d{4}-\d{5}-BN-[01]$/',
+            ],
+            'birthday' => [
+                'required',
+                'date_format:Y-m-d',
+                'before_or_equal:today',
+            ],
+            'password' => [
+                'required',
+                'string',
+            ],
+        ]);
 
-                    'password.required' =>
-                        'Password is required.',
-                ]
+        // Keep the existing authentication service.
+        $result = $this->authService->login($data);
+
+        // Correct login resets previous failed attempts.
+        $limiter->clear($attemptKey);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful.',
+            'user' => $result['user'],
+            'token' => $result['token'],
+            'token_type' => $result['token_type'],
+            'expires_in' => $result['expires_in'],
+            'role' => $result['role'],
+        ], 200);
+
+    } catch (ValidationException $e) {
+        // Missing or malformed form fields are validation errors,
+        // not incorrect-credential attempts.
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+
+    } catch (\Throwable $e) {
+        $credentialErrors = [
+            'Invalid credentials.',
+            'Invalid birthday.',
+            'Invalid password.',
+        ];
+
+        // Do not count database or server errors as wrong passwords.
+        if (!in_array($e->getMessage(), $credentialErrors, true)) {
+            \Illuminate\Support\Facades\Log::error(
+                'Student login failed unexpectedly.',
+                ['exception' => $e]
             );
 
-            $result = $this->authService
-                ->login($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful.',
-                'user' => $result['user'],
-                'token' => $result['token'],
-                'token_type' => $result['token_type'],
-                'expires_in' => $result['expires_in'],
-                'role' => $result['role'],
-            ], 200);
-
-        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 401);
+                'message' => 'Unable to sign in right now. Please try again.',
+            ], 500);
         }
+
+        // Count incorrect credentials within a five-minute window.
+        $limiter->hit($attemptKey, 300);
+        $attempts = $limiter->attempts($attemptKey);
+
+        // The fifth incorrect attempt starts a fresh 60-second lock.
+        if ($attempts >= 5) {
+            $limiter->hit($lockKey, 60);
+            $limiter->clear($attemptKey);
+
+            return response()->json([
+                'success' => false,
+                'locked' => true,
+                'message' => 'Too many incorrect login attempts. Please try again in 60 seconds.',
+                'retry_after' => 60,
+                'attempts_remaining' => 0,
+            ], 429)->header('Retry-After', '60');
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Student ID, birthday, or password is incorrect.',
+            'attempts_remaining' => max(0, 5 - $attempts),
+        ], 401);
     }
+}
 
     public function nurseLogin(
         Request $request

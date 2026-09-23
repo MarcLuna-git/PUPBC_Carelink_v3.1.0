@@ -1,13 +1,6 @@
-import {
-  useMemo,
-  useState,
-} from 'react';
 
-import {
-  Link,
-  useNavigate,
-} from 'react-router-dom';
-
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 
 import {
@@ -22,227 +15,226 @@ import {
 } from 'lucide-react';
 
 import clinicLogo from '../../assets/clinic logo.jpg';
-import pupbg from '../../assets/pupbg.jpg';
+import campusPhoto from '../../assets/pup-binan-hero.jpg';
 
-const REMEMBER_LOGIN_KEY =
-  'carelink.student.remember-login';
+const REMEMBER_LOGIN_KEY = 'carelink.student.remember-login';
+const LOCK_KEY_PREFIX = 'carelink.student.login-lock.';
+
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+].map((label, index) => ({
+  label,
+  value: String(index + 1).padStart(2, '0'),
+}));
 
 const getRememberedLogin = () => {
+  const empty = {
+    enabled: false,
+    student_id: '',
+    dobMonth: '',
+    dobDay: '',
+    dobYear: '',
+  };
+
   try {
     const saved = JSON.parse(
-      localStorage.getItem(
-        REMEMBER_LOGIN_KEY
-      ) || '{}'
+      localStorage.getItem(REMEMBER_LOGIN_KEY) || '{}'
     );
 
     return {
-      enabled:
-        Boolean(saved.enabled),
-      student_id:
-        saved.student_id || '',
-      dobMonth:
-        saved.dobMonth || '',
-      dobDay:
-        saved.dobDay || '',
-      dobYear:
-        saved.dobYear || '',
+      enabled: saved.enabled === true,
+      student_id: saved.student_id || '',
+      dobMonth: saved.dobMonth || '',
+      dobDay: saved.dobDay || '',
+      dobYear: saved.dobYear || '',
     };
   } catch {
-    return {
-      enabled: false,
-      student_id: '',
-      dobMonth: '',
-      dobDay: '',
-      dobYear: '',
-    };
+    return empty;
   }
 };
 
-const Login = () => {
-  const navigate =
-    useNavigate();
+const formatStudentId = (value) => {
+  const clean = String(value)
+    .toUpperCase()
+    .replace(/[^0-9BN]/g, '');
 
-  const rememberedLogin =
-    useMemo(
-      () =>
-        getRememberedLogin(),
-      []
+  if (clean.length <= 4) return clean;
+
+  if (clean.length <= 9) {
+    return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+  }
+
+  if (clean.length <= 11) {
+    return `${clean.slice(0, 4)}-${clean.slice(4, 9)}-${clean.slice(9)}`;
+  }
+
+  return `${clean.slice(0, 4)}-${clean.slice(4, 9)}-${clean.slice(9, 11)}-${clean.slice(11, 12)}`;
+};
+
+// Display-only countdown.
+// Laravel remains responsible for enforcing the actual lock.
+const getSavedLockUntil = (studentId) => {
+  if (!studentId) return 0;
+
+  try {
+    const expiresAt = Number(
+      sessionStorage.getItem(LOCK_KEY_PREFIX + studentId)
     );
 
-  const [form, setForm] =
-    useState({
-      student_id:
-        rememberedLogin.student_id,
-      password: '',
-      dobMonth:
-        rememberedLogin.dobMonth,
-      dobDay:
-        rememberedLogin.dobDay,
-      dobYear:
-        rememberedLogin.dobYear,
-    });
+    if (
+      Number.isFinite(expiresAt) &&
+      expiresAt > Date.now()
+    ) {
+      return expiresAt;
+    }
 
-  const [
-    rememberMe,
-    setRememberMe,
-  ] = useState(
+    sessionStorage.removeItem(LOCK_KEY_PREFIX + studentId);
+  } catch {
+    // Server-side lock remains effective.
+  }
+
+  return 0;
+};
+
+const Login = () => {
+  const navigate = useNavigate();
+
+  const rememberedLogin = useMemo(getRememberedLogin, []);
+  const submittingRef = useRef(false);
+
+  const [form, setForm] = useState({
+    student_id: rememberedLogin.student_id,
+    password: '',
+    dobMonth: rememberedLogin.dobMonth,
+    dobDay: rememberedLogin.dobDay,
+    dobYear: rememberedLogin.dobYear,
+  });
+
+  const [rememberMe, setRememberMe] = useState(
     rememberedLogin.enabled
   );
 
-  const [errors, setErrors] =
-    useState({});
+  const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [message, setMessage] =
-    useState('');
+  const [attemptsRemaining, setAttemptsRemaining] = useState(null);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [lockUntil, setLockUntil] = useState(
+    () => getSavedLockUntil(rememberedLogin.student_id)
+  );
 
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
-  const months = [
-    {
-      value: '01',
-      label: 'January',
-    },
-    {
-      value: '02',
-      label: 'February',
-    },
-    {
-      value: '03',
-      label: 'March',
-    },
-    {
-      value: '04',
-      label: 'April',
-    },
-    {
-      value: '05',
-      label: 'May',
-    },
-    {
-      value: '06',
-      label: 'June',
-    },
-    {
-      value: '07',
-      label: 'July',
-    },
-    {
-      value: '08',
-      label: 'August',
-    },
-    {
-      value: '09',
-      label: 'September',
-    },
-    {
-      value: '10',
-      label: 'October',
-    },
-    {
-      value: '11',
-      label: 'November',
-    },
-    {
-      value: '12',
-      label: 'December',
-    },
-  ];
+  const lockSeconds = Math.max(
+    0,
+    Math.ceil((lockUntil - now) / 1000)
+  );
 
-  const currentYear =
-    new Date().getFullYear();
+  const isLocked = lockSeconds > 0;
 
-  const birthYears =
-    useMemo(
-      () =>
-        Array.from(
-          {
-            length: 100,
-          },
-          (_, index) =>
-            currentYear - index
-        ),
-      [currentYear]
+  const currentYear = new Date().getFullYear();
+
+  const birthYears = useMemo(
+    () =>
+      Array.from(
+        { length: 100 },
+        (_, index) => currentYear - index
+      ),
+    [currentYear]
+  );
+
+  const birthDays = useMemo(() => {
+    const maxDay =
+      form.dobMonth && form.dobYear
+        ? new Date(
+            Number(form.dobYear),
+            Number(form.dobMonth),
+            0
+          ).getDate()
+        : 31;
+
+    return Array.from(
+      { length: maxDay },
+      (_, index) => index + 1
     );
+  }, [form.dobMonth, form.dobYear]);
 
-  const birthDays =
-    useMemo(() => {
-      if (
-        !form.dobMonth ||
-        !form.dobYear
-      ) {
-        return Array.from(
-          {
-            length: 31,
-          },
-          (_, index) =>
-            index + 1
-        );
+  /*
+   * Restore the countdown for the entered Student ID.
+   */
+  useEffect(() => {
+    setLockUntil(getSavedLockUntil(form.student_id));
+    setNow(Date.now());
+    setAttemptsRemaining(null);
+  }, [form.student_id]);
+
+  /*
+   * Countdown. The backend still decides whether login
+   * is allowed, even after refreshing this page.
+   */
+  useEffect(() => {
+    if (!lockUntil) return undefined;
+
+    const tick = () => {
+      const current = Date.now();
+      setNow(current);
+
+      if (current >= lockUntil) {
+        try {
+          sessionStorage.removeItem(
+            LOCK_KEY_PREFIX + form.student_id
+          );
+        } catch {
+          // Ignore storage restrictions.
+        }
+
+        setLockUntil(0);
+        setAttemptsRemaining(null);
+        setMessage('');
       }
-
-      const maxDay =
-        new Date(
-          Number(form.dobYear),
-          Number(form.dobMonth),
-          0
-        ).getDate();
-
-      return Array.from(
-        {
-          length: maxDay,
-        },
-        (_, index) =>
-          index + 1
-      );
-    }, [
-      form.dobMonth,
-      form.dobYear,
-    ]);
-
-  const getBirthdayValue =
-    () => {
-      if (
-        !form.dobMonth ||
-        !form.dobDay ||
-        !form.dobYear
-      ) {
-        return '';
-      }
-
-      const month =
-        String(
-          form.dobMonth
-        ).padStart(2, '0');
-
-      const day =
-        String(
-          form.dobDay
-        ).padStart(2, '0');
-
-      return `${form.dobYear}-${month}-${day}`;
     };
 
-  const validate = () => {
-    const newErrors =
-      {};
+    tick();
 
-    const idRegex =
-      /^\d{4}-\d{5}-BN-[01]$/;
+    const timer = window.setInterval(tick, 1000);
 
-    if (!form.student_id) {
-      newErrors.student_id =
-        'Student ID is required';
-    } else if (
-      !idRegex.test(
-        form.student_id
-      )
+    return () => window.clearInterval(timer);
+  }, [lockUntil, form.student_id]);
+
+  const getBirthdayValue = () => {
+    if (
+      !form.dobMonth ||
+      !form.dobDay ||
+      !form.dobYear
     ) {
-      newErrors.student_id =
+      return '';
+    }
+
+    return `${form.dobYear}-${String(form.dobMonth).padStart(2, '0')}-${String(form.dobDay).padStart(2, '0')}`;
+  };
+
+  const validate = () => {
+    const nextErrors = {};
+
+    if (!form.student_id.trim()) {
+      nextErrors.student_id = 'Student ID is required';
+    } else if (
+      !/^\d{4}-\d{5}-BN-[01]$/.test(form.student_id)
+    ) {
+      nextErrors.student_id =
         'Format: 2016-00000-BN-0 or BN-1';
     }
 
@@ -251,440 +243,334 @@ const Login = () => {
       !form.dobDay ||
       !form.dobYear
     ) {
-      newErrors.birthday =
-        'Birthday is required';
+      nextErrors.birthday = 'Birthday is required';
     } else {
-      const birthday =
-        getBirthdayValue();
+      const year = Number(form.dobYear);
+      const month = Number(form.dobMonth);
+      const day = Number(form.dobDay);
 
-      const birthdayDate =
-        new Date(
-          `${birthday}T00:00:00+08:00`
-        );
+      const actual = new Date(
+        Date.UTC(year, month - 1, day)
+      );
 
-      const today =
-        new Date();
+      const correctDate =
+        actual.getUTCFullYear() === year &&
+        actual.getUTCMonth() === month - 1 &&
+        actual.getUTCDate() === day;
 
-      if (
-        Number.isNaN(
-          birthdayDate.getTime()
-        )
-      ) {
-        newErrors.birthday =
+      if (!correctDate) {
+        nextErrors.birthday =
           'Please enter a valid birthday';
-      } else if (
-        birthdayDate >
-        today
-      ) {
-        newErrors.birthday =
+      } else if (actual.getTime() > Date.now()) {
+        nextErrors.birthday =
           'Birthday cannot be in the future';
       }
     }
 
     if (!form.password) {
-      newErrors.password =
-        'Password is required';
-    } else if (
-      form.password.length <
-      5
-    ) {
-      newErrors.password =
-        'Minimum 5 characters';
+      nextErrors.password = 'Password is required';
+    } else if (form.password.length < 5) {
+      nextErrors.password = 'Minimum 5 characters';
     }
 
-    setErrors(
-      newErrors
-    );
+    setErrors(nextErrors);
 
-    return (
-      Object.keys(
-        newErrors
-      ).length === 0
-    );
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const formatStudentId = (
-    value
-  ) => {
-    const clean =
-      value
-        .toUpperCase()
-        .replace(
-          /[^0-9BN]/g,
-          ''
-        );
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
-    let formatted = '';
+    const nextValue =
+      name === 'student_id'
+        ? formatStudentId(value)
+        : value;
 
-    if (
-      clean.length <= 4
-    ) {
-      formatted =
-        clean;
-    } else if (
-      clean.length <= 9
-    ) {
-      formatted =
-        `${clean.slice(
-          0,
-          4
-        )}-${clean.slice(
-          4
-        )}`;
-    } else if (
-      clean.length <= 11
-    ) {
-      formatted =
-        `${clean.slice(
-          0,
-          4
-        )}-${clean.slice(
-          4,
-          9
-        )}-${clean.slice(
-          9
-        )}`;
-    } else {
-      formatted =
-        `${clean.slice(
-          0,
-          4
-        )}-${clean.slice(
-          4,
-          9
-        )}-${clean.slice(
-          9,
-          11
-        )}-${clean.slice(
-          11,
-          12
-        )}`;
-    }
-
-    return formatted.slice(
-      0,
-      17
-    );
-  };
-
-  const handleChange = (
-    e
-  ) => {
-    const {
-      name,
-      value,
-    } = e.target;
-
-    let newValue =
-      value;
-
-    if (
-      name ===
-      'student_id'
-    ) {
-      newValue =
-        formatStudentId(
-          value
-        );
-    }
-
-    setForm(
-      (current) => ({
+    setForm((current) => {
+      const updated = {
         ...current,
-        [name]:
-          newValue,
-      })
-    );
+        [name]: nextValue,
+      };
 
-    setErrors(
-      (current) => ({
-        ...current,
-        [name]:
-          '',
-        ...(name.startsWith(
-          'dob'
-        )
-          ? {
-              birthday:
-                '',
-            }
-          : {}),
-      })
-    );
+      if (
+        (name === 'dobMonth' || name === 'dobYear') &&
+        updated.dobMonth &&
+        updated.dobYear &&
+        updated.dobDay
+      ) {
+        const maxDay = new Date(
+          Number(updated.dobYear),
+          Number(updated.dobMonth),
+          0
+        ).getDate();
+
+        if (Number(updated.dobDay) > maxDay) {
+          updated.dobDay = '';
+        }
+      }
+
+      return updated;
+    });
+
+    setErrors((current) => ({
+      ...current,
+      [name]: '',
+      ...(name.startsWith('dob')
+        ? { birthday: '' }
+        : {}),
+    }));
+
+    if (!isLocked) {
+      setMessage('');
+    }
   };
 
-  const handleRememberChange =
-    (e) => {
-      const checked =
-        e.target.checked;
+  const handleRememberChange = (event) => {
+    const checked = event.target.checked;
 
-      setRememberMe(
-        checked
+    setRememberMe(checked);
+
+    if (!checked) {
+      localStorage.removeItem(REMEMBER_LOGIN_KEY);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    // Prevent duplicate requests from rapid clicking.
+    if (
+      submittingRef.current ||
+      isLocked ||
+      !validate()
+    ) {
+      return;
+    }
+
+    submittingRef.current = true;
+    setLoading(true);
+    setMessage('');
+
+    try {
+      /*
+       * Only one request.
+       * No separate artificial 10-second timer.
+       * Axios already has its own network timeout.
+       */
+      const response = await authService.login(
+        form.student_id,
+        form.password,
+        getBirthdayValue()
       );
 
-      if (!checked) {
-        localStorage.removeItem(
-          REMEMBER_LOGIN_KEY
-        );
-      }
-    };
+      if (
+        response?.success &&
+        localStorage.getItem('token')
+      ) {
+        setAttemptsRemaining(null);
+        setLockUntil(0);
 
-  const handleSubmit =
-    async (e) => {
-      e.preventDefault();
-
-      if (!validate()) {
-        return;
-      }
-
-      setLoading(true);
-      setMessage('');
-
-      const timeoutId =
-        setTimeout(() => {
-          setMessage(
-            'Server is taking too long. Please check your connection and try again.'
+        try {
+          sessionStorage.removeItem(
+            LOCK_KEY_PREFIX + form.student_id
           );
-
-          setLoading(
-            false
-          );
-        }, 10000);
-
-      try {
-        const birthday =
-          getBirthdayValue();
-
-        const res =
-          await authService.login(
-            form.student_id,
-            form.password,
-            birthday
-          );
-
-        clearTimeout(
-          timeoutId
-        );
-
-        if (res.success) {
-          if (
-            rememberMe
-          ) {
-            localStorage.setItem(
-              REMEMBER_LOGIN_KEY,
-              JSON.stringify({
-                enabled:
-                  true,
-                student_id:
-                  form.student_id,
-                dobMonth:
-                  form.dobMonth,
-                dobDay:
-                  form.dobDay,
-                dobYear:
-                  form.dobYear,
-              })
-            );
-          } else {
-            localStorage.removeItem(
-              REMEMBER_LOGIN_KEY
-            );
-          }
-
-          navigate(
-            '/student',
-            {
-              replace: true,
-            }
-          );
+        } catch {
+          // Ignore storage restrictions.
         }
-      } catch (err) {
-        clearTimeout(
-          timeoutId
+
+        /*
+         * Remember only Student ID and birthday.
+         * Never save the password.
+         */
+        if (rememberMe) {
+          localStorage.setItem(
+            REMEMBER_LOGIN_KEY,
+            JSON.stringify({
+              enabled: true,
+              student_id: form.student_id,
+              dobMonth: form.dobMonth,
+              dobDay: form.dobDay,
+              dobYear: form.dobYear,
+            })
+          );
+        } else {
+          localStorage.removeItem(REMEMBER_LOGIN_KEY);
+        }
+
+        navigate('/student', {
+          replace: true,
+        });
+      } else {
+        setMessage(
+          'Unable to sign in. Please try again.'
+        );
+      }
+    } catch (error) {
+      const status = error.response?.status;
+      const body = error.response?.data || {};
+
+      if (status === 429) {
+        /*
+         * The backend decides the actual lock duration.
+         */
+        const rawSeconds = Number(
+          body.retry_after ??
+          error.response?.headers?.['retry-after']
+        );
+
+        const seconds =
+          Number.isFinite(rawSeconds) && rawSeconds > 0
+            ? Math.ceil(rawSeconds)
+            : 60;
+
+        const expiresAt =
+          Date.now() + seconds * 1000;
+
+        setLockUntil(expiresAt);
+        setNow(Date.now());
+        setAttemptsRemaining(0);
+
+        try {
+          sessionStorage.setItem(
+            LOCK_KEY_PREFIX + form.student_id,
+            String(expiresAt)
+          );
+        } catch {
+          // Laravel still enforces the actual lock.
+        }
+
+        setMessage(
+          'Too many login attempts. Please wait before trying again.'
+        );
+      } else if (status === 401) {
+        /*
+         * Only show remaining attempts when the backend
+         * has actually returned that value.
+         */
+        const supplied =
+          body.attempts_remaining !== undefined &&
+          body.attempts_remaining !== null;
+
+        const remaining = Number(
+          body.attempts_remaining
         );
 
         if (
-          err.code ===
-          'ECONNABORTED'
+          supplied &&
+          Number.isFinite(remaining)
         ) {
-          setMessage(
-            'Request timed out. Please check your connection.'
-          );
-        } else if (
-          !err.response
-        ) {
-          setMessage(
-            'Cannot connect to server. Please make sure the server is running.'
+          setAttemptsRemaining(
+            Math.max(
+              0,
+              Math.min(5, Math.trunc(remaining))
+            )
           );
         } else {
-          setMessage(
-            err.response
-              ?.data
-              ?.message ||
-              'Login failed. Please try again.'
-          );
+          setAttemptsRemaining(null);
         }
-      } finally {
-        setLoading(false);
+
+        setMessage(
+          'Student ID, birthday, or password is incorrect.'
+        );
+      } else if (status === 422) {
+        setMessage(
+          'Please check your Student ID, birthday, and password.'
+        );
+      } else if (error.code === 'ECONNABORTED') {
+        setMessage(
+          'The request timed out. Please check your connection and try again.'
+        );
+      } else if (!error.response) {
+        setMessage(
+          'Cannot connect to CareLink. Make sure the backend server is running.'
+        );
+      } else {
+        setMessage(
+          'Unable to sign in right now. Please try again later.'
+        );
       }
-    };
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left branding */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden">
-        <img
-          src={pupbg}
-          alt="PUP Biñan Campus"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+      
+{/* Desktop branding — clean campus photo, no dots or grid */}
+<div className="relative hidden min-h-screen overflow-hidden lg:flex lg:w-1/2 xl:w-3/5">
+  <img
+    src={campusPhoto}
+    alt="PUP Biñan Campus"
+    className="absolute inset-0 h-full w-full object-cover object-[60%_center]"
+  />
 
-        <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/78 via-maroon-800/72 to-maroon-950/78" />
+  <div className="absolute inset-0 bg-gradient-to-r from-[#4D0D1B]/95 via-[#741126]/78 to-[#4D0D1B]/35" />
 
-        <div className="absolute inset-0 opacity-10">
-          <div
-            className="absolute top-0 left-0 w-full h-full"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle at 25px 25px, white 2px, transparent 0)',
-              backgroundSize:
-                '50px 50px',
-            }}
-          />
-        </div>
+  <div className="absolute inset-0 bg-gradient-to-t from-[#4D0D1B]/70 via-transparent to-transparent" />
 
-        <div className="absolute inset-0">
-          <div className="absolute -top-20 -left-20 w-96 h-96 bg-yellow-600 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob" />
+  <div className="relative z-10 flex w-full flex-col items-center justify-center px-8 py-12 text-center text-white xl:px-14">
+    <div className="mb-7 flex h-28 w-28 items-center justify-center rounded-full border border-white/30 bg-white/15 p-3 shadow-xl backdrop-blur-sm">
+      <img
+        src={clinicLogo}
+        alt="PUPBC CareLink clinic logo"
+        className="h-full w-full rounded-full object-cover"
+      />
+    </div>
 
-          <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-red-800 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-2000" />
+    <h1 className="text-4xl font-extrabold tracking-tight xl:text-5xl">
+      PUPBC <span className="text-rose-200">CareLink</span>
+    </h1>
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-yellow-700 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000" />
-        </div>
+    <p className="mt-4 max-w-md text-lg font-semibold text-white/95">
+      Polytechnic University of the Philippines
+    </p>
 
-        <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
-          <div className="mb-8 animate-bounce-in">
-            <div className="w-28 h-28 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl border-2 border-white/30 p-3">
-              <img
-                src={
-                  clinicLogo
-                }
-                alt="PUPBC CareLink logo"
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-          </div>
+    <p className="mt-1 text-sm font-medium text-rose-100">
+      Biñan Campus
+    </p>
 
-          <h1 className="text-5xl font-extrabold text-center mb-4 leading-tight animate-fadeInUp">
-            PUPBC{' '}
-            <span className="bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-              CareLink
-            </span>
-          </h1>
+    <div className="my-8 h-px w-20 bg-rose-200/70" />
 
-          <p className="text-xl text-yellow-100 text-center mb-2 max-w-md animate-fadeInUp animation-delay-200">
-            Polytechnic
-            University of the
-            Philippines
-          </p>
+    <h2 className="max-w-md text-2xl font-bold leading-tight">
+      Your Health. Our Priority.
+    </h2>
 
-          <p className="text-sm text-yellow-200 text-center mb-8 max-w-md animate-fadeInUp animation-delay-200">
-            Biñan Campus
-          </p>
+    <p className="mt-4 max-w-md text-sm leading-7 text-rose-100/90">
+      A QR Integrated Health Information System with
+      Self-service Triage Kiosk.
+    </p>
 
-          <div className="space-y-4 w-full max-w-sm animate-fadeInUp animation-delay-400">
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-yellow-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={
-                      2
-                    }
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-              </div>
+    <p className="mt-3 max-w-sm text-sm leading-6 text-white/75">
+      Book appointments, access your clinic records and stay
+      connected with campus health services.
+    </p>
 
-              <span className="text-sm">
-                Clinic & Health
-                Services
-              </span>
-            </div>
+    <p className="mt-10 font-serif text-lg italic text-rose-100">
+      “Smarter campus healthcare for every Iskolar ng Bayan.”
+    </p>
 
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-yellow-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={
-                      2
-                    }
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
+    <p className="mt-12 text-xs text-white/55">
+      PUPBC CareLink · Student Health Portal
+    </p>
+  </div>
+</div>
 
-              <span className="text-sm">
-                Medical Records &
-                Appointments
-              </span>
-            </div>
 
-            <div className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-yellow-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={
-                      2
-                    }
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-
-              <span className="text-sm">
-                Secure Student
-                Portal
-              </span>
-            </div>
-          </div>
-
-          <p className="text-yellow-200/70 text-sm mt-12 text-center animate-fadeInUp animation-delay-600">
-            &copy; 2026
-            PUPBC CareLink. All
-            rights reserved.
-          </p>
-        </div>
-      </div>
-
-      {/* Right login */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900 lg:w-1/2 xl:w-2/5">
+      {/* Original login panel */}
+      <div className="relative isolate flex-1 flex items-center justify-center overflow-hidden px-4 py-8 lg:w-1/2 lg:bg-[#F8F9FC] lg:py-12 xl:w-2/5">
+  <img
+    src={campusPhoto}
+    alt=""
+    className="absolute inset-0 -z-20 h-full w-full object-cover object-center lg:hidden"
+  />
+  <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#4D0D1B]/88 via-[#741126]/70 to-[#4D0D1B]/90 lg:hidden" />
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8 lg:hidden">
             <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg mb-3 p-1.5">
               <img
-                src={
-                  clinicLogo
-                }
+                src={clinicLogo}
                 alt="PUPBC CareLink logo"
                 className="w-full h-full object-cover rounded-full"
               />
@@ -702,26 +588,46 @@ const Login = () => {
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700 animate-fadeInUp">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Welcome Back,
-                Isko&apos;t Iska!
+                Welcome Back, Isko&apos;t Iska!
               </h2>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Login to access
-                your student portal
+                Login to access your student portal
               </p>
             </div>
 
             {message && (
-              <div className="mb-4 p-3 rounded-xl text-sm text-center animate-shake bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              <div
+                role="alert"
+                className="mb-4 p-3 rounded-xl text-sm text-center animate-shake bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+              >
                 {message}
               </div>
             )}
 
+            {isLocked && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+              >
+                Login temporarily locked. Try again in{' '}
+                <strong>{lockSeconds}s</strong>.
+              </div>
+            )}
+
+            {!isLocked &&
+              attemptsRemaining !== null &&
+              attemptsRemaining > 0 && (
+                <p className="mb-4 text-center text-xs font-medium text-amber-700 dark:text-amber-300">
+                  {attemptsRemaining} attempt
+                  {attemptsRemaining === 1 ? '' : 's'} remaining
+                  before a 60-second lock.
+                </p>
+              )}
+
             <form
-              onSubmit={
-                handleSubmit
-              }
+              onSubmit={handleSubmit}
               className="space-y-5"
               autoComplete="on"
             >
@@ -748,16 +654,10 @@ const Login = () => {
                     }`}
                     type="text"
                     name="student_id"
-                    value={
-                      form.student_id
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    value={form.student_id}
+                    onChange={handleChange}
                     placeholder="2016-00000-BN-0"
-                    maxLength={
-                      17
-                    }
+                    maxLength={17}
                     autoComplete="username"
                     inputMode="text"
                     required
@@ -766,9 +666,7 @@ const Login = () => {
 
                 {errors.student_id && (
                   <p className="text-red-500 text-xs mt-1 ml-1">
-                    {
-                      errors.student_id
-                    }
+                    {errors.student_id}
                   </p>
                 )}
               </div>
@@ -790,8 +688,7 @@ const Login = () => {
                     <Calendar className="w-4 h-4 text-gray-400" />
 
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-300">
-                      Month / Day /
-                      Year
+                      Month / Day / Year
                     </p>
                   </div>
 
@@ -807,37 +704,21 @@ const Login = () => {
                       <select
                         id="dob-month"
                         name="dobMonth"
-                        value={
-                          form.dobMonth
-                        }
-                        onChange={
-                          handleChange
-                        }
+                        value={form.dobMonth}
+                        onChange={handleChange}
                         className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-maroon-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                         required
                       >
-                        <option value="">
-                          Month
-                        </option>
+                        <option value="">Month</option>
 
-                        {months.map(
-                          (
-                            month
-                          ) => (
-                            <option
-                              key={
-                                month.value
-                              }
-                              value={
-                                month.value
-                              }
-                            >
-                              {
-                                month.label
-                              }
-                            </option>
-                          )
-                        )}
+                        {MONTHS.map((month) => (
+                          <option
+                            key={month.value}
+                            value={month.value}
+                          >
+                            {month.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -852,38 +733,21 @@ const Login = () => {
                       <select
                         id="dob-day"
                         name="dobDay"
-                        value={
-                          form.dobDay
-                        }
-                        onChange={
-                          handleChange
-                        }
+                        value={form.dobDay}
+                        onChange={handleChange}
                         className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-maroon-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                         required
                       >
-                        <option value="">
-                          Day
-                        </option>
+                        <option value="">Day</option>
 
-                        {birthDays.map(
-                          (day) => (
-                            <option
-                              key={
-                                day
-                              }
-                              value={String(
-                                day
-                              ).padStart(
-                                2,
-                                '0'
-                              )}
-                            >
-                              {
-                                day
-                              }
-                            </option>
-                          )
-                        )}
+                        {birthDays.map((day) => (
+                          <option
+                            key={day}
+                            value={String(day).padStart(2, '0')}
+                          >
+                            {day}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -898,35 +762,21 @@ const Login = () => {
                       <select
                         id="dob-year"
                         name="dobYear"
-                        value={
-                          form.dobYear
-                        }
-                        onChange={
-                          handleChange
-                        }
+                        value={form.dobYear}
+                        onChange={handleChange}
                         className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-maroon-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                         required
                       >
-                        <option value="">
-                          Year
-                        </option>
+                        <option value="">Year</option>
 
-                        {birthYears.map(
-                          (year) => (
-                            <option
-                              key={
-                                year
-                              }
-                              value={
-                                year
-                              }
-                            >
-                              {
-                                year
-                              }
-                            </option>
-                          )
-                        )}
+                        {birthYears.map((year) => (
+                          <option
+                            key={year}
+                            value={year}
+                          >
+                            {year}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -934,9 +784,7 @@ const Login = () => {
 
                 {errors.birthday && (
                   <p className="text-red-500 text-xs mt-1 ml-1">
-                    {
-                      errors.birthday
-                    }
+                    {errors.birthday}
                   </p>
                 )}
               </div>
@@ -962,18 +810,10 @@ const Login = () => {
                         ? 'border-red-300 focus:ring-red-400 bg-red-50 dark:bg-red-900/20'
                         : 'border-gray-300 dark:border-gray-600 focus:ring-maroon-500 hover:border-maroon-300'
                     }`}
-                    type={
-                      showPassword
-                        ? 'text'
-                        : 'password'
-                    }
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
-                    value={
-                      form.password
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    value={form.password}
+                    onChange={handleChange}
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     required
@@ -982,12 +822,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      setShowPassword(
-                        (
-                          current
-                        ) =>
-                          !current
-                      )
+                      setShowPassword((current) => !current)
                     }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
                     aria-label={
@@ -1011,24 +846,18 @@ const Login = () => {
 
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1 ml-1">
-                    {
-                      errors.password
-                    }
+                    {errors.password}
                   </p>
                 )}
               </div>
 
-              {/* Remember + Forgot password */}
+              {/* Remember Me and Forgot Password */}
               <div className="flex items-center justify-between gap-3">
                 <label className="flex cursor-pointer select-none items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={
-                      rememberMe
-                    }
-                    onChange={
-                      handleRememberChange
-                    }
+                    checked={rememberMe}
+                    onChange={handleRememberChange}
                     className="h-4 w-4 rounded border-gray-300 accent-maroon-800 dark:border-gray-600"
                   />
 
@@ -1045,21 +874,19 @@ const Login = () => {
                 </Link>
               </div>
 
+              {/* Sign In */}
               <button
                 className="w-full py-3 px-4 bg-gradient-to-r from-maroon-800 to-maroon-900 hover:from-maroon-900 hover:to-maroon-950 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
-                disabled={
-                  loading
-                }
+                disabled={loading || isLocked}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-
-                    <span>
-                      Signing in...
-                    </span>
+                    <span>Signing in...</span>
                   </>
+                ) : isLocked ? (
+                  `Try again in ${lockSeconds}s`
                 ) : (
                   'Sign In'
                 )}
@@ -1078,17 +905,13 @@ const Login = () => {
 
             <div className="text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Don&apos;t have
-                an account?{' '}
+                Don&apos;t have an account?{' '}
 
                 <Link
                   to="/register"
                   className="font-semibold text-maroon-600 dark:text-maroon-400 hover:text-maroon-800 dark:hover:text-maroon-300 transition-colors inline-flex items-center space-x-1"
                 >
-                  <span>
-                    Create Account
-                  </span>
-
+                  <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </p>
@@ -1101,10 +924,7 @@ const Login = () => {
               className="text-xs text-gray-400 dark:text-gray-500 hover:underline inline-flex items-center space-x-1"
             >
               <ArrowLeft className="w-3 h-3" />
-
-              <span>
-                Back to Home
-              </span>
+              <span>Back to Home</span>
             </Link>
           </div>
         </div>

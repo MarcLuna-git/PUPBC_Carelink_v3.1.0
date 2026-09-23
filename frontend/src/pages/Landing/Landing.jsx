@@ -1,405 +1,1039 @@
-import { useState, useEffect } from 'react';
+
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar, QrCode, FileText, Bell, Lock, ArrowRight, Menu, X, ChevronDown, ChevronUp,
-  Users, Activity, Clock, HeartPulse, Star, MapPin, Phone, Mail, ExternalLink
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  ClipboardList,
+  FileHeart,
+  FileText,
+  GraduationCap,
+  Heart,
+  HeartPulse,
+  LogIn,
+  MapPin,
+  Megaphone,
+  Menu,
+  Monitor,
+  QrCode,
+  RefreshCw,
+  ShieldCheck,
+  Smartphone,
+  Stethoscope,
+  UserRoundPlus,
+  X,
 } from 'lucide-react';
+
+import api from '../../services/api';
 import clinicLogo from '../../assets/clinic logo.jpg';
-import pupbg from '../../assets/pupbg.jpg';
+import campusPhoto from '../../assets/pup-binan-hero.jpg';
+import clinicScene from '../../assets/clinic-waiting-area.jpg';
 
-const Landing = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
+const NAVIGATION = [
+  { label: 'Home', href: '#home' },
+  { label: 'About', href: '#about' },
+  { label: 'Services', href: '#services' },
+  { label: 'Announcements', href: '#announcements' },
+  { label: 'Contact', href: '#contact' },
+];
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+const FEATURES = [
+  {
+    icon: GraduationCap,
+    title: 'Student Portal',
+    description:
+      'Manage your appointments, health records and student account.',
+    href: '/login',
+  },
+  {
+    icon: QrCode,
+    title: 'QR Check-in',
+    description:
+      'Quick clinic check-in on the day of your approved appointment.',
+    href: '#how-it-works',
+  },
+  {
+    icon: FileHeart,
+    title: 'Health Records',
+    description:
+      'View your recorded consultations and available medical certificates.',
+    href: '#services',
+  },
+  {
+    icon: CalendarDays,
+    title: 'Appointments',
+    description:
+      'Book, edit or cancel eligible clinic appointments.',
+    href: '/login',
+  },
+];
 
-  const fadeUp = {
-    hidden: { opacity: 0, y: 32 },
-    visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.6, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] } }),
-  };
+const STEPS = [
+  {
+    icon: UserRoundPlus,
+    title: 'Create Account',
+    description:
+      'Register using your student details and verify your email.',
+  },
+  {
+    icon: ClipboardList,
+    title: 'Complete Health Profile',
+    description:
+      'Provide your required health information during your first login.',
+  },
+  {
+    icon: CalendarDays,
+    title: 'Book Appointment',
+    description:
+      'Select a clinic service, available date and time slot.',
+  },
+  {
+    icon: QrCode,
+    title: 'Check In with QR',
+    description:
+      'Present your QR code on your approved appointment day.',
+  },
+];
 
-  const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
+const SERVICES = [
+  {
+    icon: Stethoscope,
+    title: 'Consultation',
+    description:
+      'Schedule a clinic consultation for your health concerns.',
+  },
+  {
+    icon: FileText,
+    title: 'Medical Certificate',
+    description:
+      'Request a medical certificate through a clinic appointment.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Medical Clearance',
+    description:
+      'Request medical clearance through the clinic.',
+  },
+  {
+    icon: HeartPulse,
+    title: 'Follow-up Checkup',
+    description:
+      'Schedule a recommended follow-up clinic visit.',
+  },
+];
 
-  const stats = [
-    { icon: Users, value: '1,200+', label: 'Students Served' },
-    { icon: Activity, value: '24/7', label: 'Online Access' },
-    { icon: Lock, value: '100%', label: 'Secure Records' },
-  ];
+const FAQS = [
+  {
+    question: 'How do I register?',
+    answer:
+      'Select Get Started, enter your official student details and verify your email using the registration OTP. After your first login, complete your Health Profile.',
+  },
+  {
+    question: 'When can I use my QR code?',
+    answer:
+      'Your check-in QR code becomes usable on the day of your approved appointment, provided that your QR credential is valid.',
+  },
+  {
+    question: 'Can I change my appointment?',
+    answer:
+      'You can edit a pending appointment or cancel an eligible appointment according to its current status and clinic queue rules.',
+  },
+  {
+    question: 'Where can I see my health records?',
+    answer:
+      'Sign in to your Student Portal and open Health Records to see the clinic consultation records available to your account.',
+  },
+];
 
-  const features = [
-    { icon: Calendar, title: 'Appointment Booking', desc: 'Schedule clinic visits anytime, anywhere without waiting in line.' },
-    { icon: QrCode, title: 'QR Check-in', desc: 'Fast and contactless check-in using your unique student QR code.' },
-    { icon: FileText, title: 'Medical Records', desc: 'Access your complete medical history and consultation notes securely.' },
-    { icon: Bell, title: 'Notifications', desc: 'Receive real-time updates on appointments, results, and announcements.' },
-    { icon: Lock, title: 'Secure Data', desc: 'Your health information is encrypted and compliant with data privacy standards.' },
-    { icon: HeartPulse, title: 'Health Monitoring', desc: 'Track your vitals and health stats with easy-to-read summaries.' },
-  ];
+function formatAnnouncementDate(value) {
+  if (!value) return '';
 
-  const steps = [
-    { step: '01', title: 'Register Account', desc: 'Sign up using your student ID and verify your email.' },
-    { step: '02', title: 'Book Appointment', desc: 'Choose your service, date, and preferred time slot.' },
-    { step: '03', title: 'Visit Clinic', desc: 'Present your QR code at the clinic kiosk for fast check-in.' },
-    { step: '04', title: 'Medical Record', desc: 'View your diagnosis, treatment, and prescriptions online.' },
-  ];
+  const date = new Date(value);
 
-  const whyUs = [
-    { icon: Clock, title: 'Save Time', desc: 'No more waiting in line. Book appointments in minutes.' },
-    { icon: Lock, title: 'Privacy First', desc: 'Encrypted, access-controlled data protection for your peace of mind.' },
-    { icon: Users, title: 'Student-Focused', desc: 'Designed specifically for PUP Biñan students.' },
-    { icon: Activity, title: 'Real-Time Updates', desc: 'Instant notifications for appointments and results.' },
-  ];
+  if (Number.isNaN(date.getTime())) return '';
 
-  const testimonials = [
-    { name: 'Maria Santos', course: 'BSIT 3-A', text: 'CareLink made it so easy to book my checkup. No more long lines at the clinic!', rating: 5 },
-    { name: 'Juan Dela Cruz', course: 'BSCS 2-B', text: 'I love that I can access my medical records anytime. Very convenient!', rating: 5 },
-    { name: 'Ana Reyes', course: 'BSN 4-C', text: 'The QR check-in is genius. Fast, contactless, and efficient.', rating: 4 },
-  ];
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
 
-  const faqs = [
-    { q: 'How do I register for CareLink?', a: 'Simply click the Register button, fill in your student details, and verify your email with the OTP sent to your inbox.' },
-    { q: 'Is my medical data secure?', a: 'Yes! All data is encrypted and stored securely. Only authorized clinic staff can access your records.' },
-    { q: 'Can I cancel or reschedule an appointment?', a: 'Yes, you can cancel pending appointments anytime. To reschedule, cancel the existing one and book a new slot.' },
-    { q: 'What if I forget my password?', a: 'Use the Forgot Password feature on the login page. An OTP will be sent to your registered email to reset your password.' },
-    { q: 'Is CareLink free for students?', a: 'Yes! CareLink is completely free for all PUP Biñan students as part of the university health services.' },
-  ];
-
-  const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:ring-offset-2';
-
+function SectionTitle({ eyebrow, title, description }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
+    <div className="mb-5">
+      {eyebrow && (
+        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#8b1730]">
+          {eyebrow}
+        </p>
+      )}
 
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-gray-100 dark:border-gray-800'
-          : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            <Link to="/" className={`flex items-center space-x-2 flex-shrink-0 rounded-lg ${focusRing}`}>
-              <img src={clinicLogo} alt="PUPBC CareLink" className="w-8 h-8 lg:w-10 lg:h-10 object-cover rounded-full" />
-              <span className={`font-bold text-lg transition-colors ${scrolled ? 'text-maroon-800 dark:text-maroon-400' : 'text-white'}`}>PUPBC CareLink</span>
-            </Link>
+      <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl lg:text-[27px]">
+        {title}
+      </h2>
 
-            <div className="hidden md:flex items-center space-x-1">
-              {['Features', 'How It Works', 'FAQ'].map(link => (
-                <a key={link} href={`#${link.toLowerCase().replace(/\s/g, '-')}`}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${focusRing} ${
-                    scrolled ? 'text-gray-600 dark:text-gray-300 hover:text-maroon-800 dark:hover:text-maroon-400 hover:bg-gray-100 dark:hover:bg-gray-800' : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}>{link}</a>
-              ))}
-            </div>
-
-            <div className="hidden md:flex items-center space-x-3">
-              <Link to="/login" className={`text-sm font-semibold px-5 py-2.5 rounded-xl transition-all ${focusRing} ${
-                scrolled
-                  ? 'text-maroon-800 dark:text-maroon-400 border border-maroon-200 dark:border-maroon-800 hover:bg-maroon-50 dark:hover:bg-maroon-900/20'
-                  : 'text-white border border-white/30 hover:bg-white/10'
-              }`}>Login</Link>
-              <Link to="/register" className={`text-sm font-semibold text-maroon-900 bg-gradient-to-r from-yellow-400 to-yellow-500 px-5 py-2.5 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition shadow-lg shadow-yellow-400/20 ${focusRing}`}>Register</Link>
-            </div>
-
-            <button aria-label="Toggle menu" className={`md:hidden p-2 rounded-lg ${focusRing}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className={`w-6 h-6 ${scrolled ? 'text-gray-800 dark:text-white' : 'text-white'}`} /> : <Menu className={`w-6 h-6 ${scrolled ? 'text-gray-800 dark:text-white' : 'text-white'}`} />}
-            </button>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-2xl">
-              <div className="px-4 py-4 space-y-2">
-                {['Features', 'How It Works', 'FAQ'].map(link => (
-                  <a key={link} href={`#${link.toLowerCase().replace(/\s/g, '-')}`} onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{link}</a>
-                ))}
-                <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <Link to="/login" className="flex-1 text-center font-semibold text-maroon-800 dark:text-maroon-400 py-3 rounded-xl border border-maroon-200 dark:border-maroon-800">Login</Link>
-                  <Link to="/register" className="flex-1 text-center font-semibold text-white bg-maroon-800 py-3 rounded-xl">Register</Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
-
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <img src={pupbg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
-        <div className="absolute inset-0 bg-gradient-to-br from-maroon-900/78 via-maroon-800/72 to-maroon-950/78"></div>
-
-        <svg className="absolute inset-x-0 top-1/2 -translate-y-1/2 w-full h-40 opacity-20" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
-          <motion.path
-            d="M0,80 L280,80 L320,80 L345,20 L370,140 L395,80 L440,80 L470,50 L500,110 L530,80 L1200,80"
-            fill="none" stroke="#fde047" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 2.2, ease: 'easeInOut', delay: 0.3 }}
-          />
-        </svg>
-
-        <div className="absolute top-1/4 -left-20 w-[500px] h-[500px] bg-yellow-500/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-maroon-500/10 rounded-full blur-[120px]"></div>
-
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40">
-          <motion.div initial="hidden" animate="visible" variants={stagger} className="text-center space-y-8">
-
-            <motion.div variants={fadeUp} className="flex justify-center">
-              <div className="w-20 h-20 lg:w-24 lg:h-24 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 p-2 lg:p-3 shadow-2xl">
-                <img src={clinicLogo} alt="PUPBC CareLink logo" className="w-full h-full object-cover rounded-full" />
-              </div>
-            </motion.div>
-
-            <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm text-yellow-200">
-                <HeartPulse className="w-4 h-4" />
-                <span>QR-Integrated Health Information System</span>
-              </span>
-            </motion.div>
-
-            <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-[0.9] tracking-tight">
-              PUPBC CareLink:{' '}
-              <span className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent">
-                A QR-Integrated Health Information System
-              </span>
-            </motion.h1>
-
-            <motion.p variants={fadeUp} className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-              PUPBC CareLink is the QR-integrated health information system with a self-service triage kiosk for the Polytechnic University of the Philippines, Biñan Campus Clinic. Book appointments, access medical records, and manage your health, all in one place.
-            </motion.p>
-
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register"
-                className={`group inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-maroon-900 px-8 py-4 rounded-2xl font-bold text-lg hover:from-yellow-300 hover:to-yellow-400 transition-all duration-300 shadow-2xl shadow-yellow-400/20 hover:shadow-yellow-400/40 transform hover:-translate-y-0.5 ${focusRing}`}>
-                <span>Get Started Free</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/login"
-                className={`group inline-flex items-center justify-center space-x-2 border-2 border-white/40 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 hover:border-white/60 backdrop-blur-sm transition-all duration-300 ${focusRing}`}>
-                <span>Login to Portal</span>
-                <ExternalLink className="w-5 h-5" />
-              </Link>
-            </motion.div>
-
-            <motion.div variants={fadeUp}
-              className="inline-flex flex-wrap justify-center gap-8 sm:gap-12 lg:gap-16 mt-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl px-8 sm:px-12 py-6 sm:py-8">
-              {stats.map((stat, i) => (
-                <div key={i} className="text-center">
-                  <stat.icon className="w-6 h-6 text-yellow-300 mx-auto mb-2" />
-                  <p className="text-2xl sm:text-3xl font-extrabold text-white">{stat.value}</p>
-                  <p className="text-xs sm:text-sm text-yellow-200/70">{stat.label}</p>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden sm:block" aria-hidden="true">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
-            <div className="w-1.5 h-3 bg-white/40 rounded-full"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="features" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
-            <motion.span variants={fadeUp} className="inline-block bg-maroon-50 dark:bg-maroon-900/20 text-maroon-800 dark:text-maroon-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Features</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">Everything You Need</motion.h2>
-            <motion.p variants={fadeUp} className="text-gray-500 dark:text-gray-400 mt-4 max-w-xl mx-auto text-lg">Manage your health conveniently with features built for student life.</motion.p>
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {features.map((f, i) => (
-              <motion.div key={i} variants={fadeUp} custom={i}
-                className="group bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-6 lg:p-8 border border-gray-100 dark:border-gray-700/50 hover:shadow-2xl hover:shadow-maroon-800/5 hover:border-maroon-100 dark:hover:border-maroon-800/30 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-maroon-800/10">
-                  <f.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{f.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-4xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
-            <motion.span variants={fadeUp} className="inline-block bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Process</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">How It Works</motion.h2>
-            <motion.p variants={fadeUp} className="text-gray-500 dark:text-gray-400 mt-4 max-w-xl mx-auto text-lg">Four simple steps to better healthcare.</motion.p>
-          </motion.div>
-
-          <div className="relative">
-            <div className="absolute left-6 lg:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-maroon-800 to-yellow-400 hidden sm:block"></div>
-
-            <div className="space-y-8 lg:space-y-12">
-              {steps.map((s, i) => (
-                <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} custom={i}
-                  className="flex items-start space-x-4 lg:space-x-6 relative">
-                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-maroon-800 to-maroon-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-base lg:text-lg flex-shrink-0 z-10 shadow-xl shadow-maroon-800/20">{s.step}</div>
-                  <div className="bg-white dark:bg-gray-700 rounded-2xl p-5 lg:p-6 border border-gray-100 dark:border-gray-600 flex-1 shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{s.title}</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-2 leading-relaxed">{s.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
-            <motion.span variants={fadeUp} className="inline-block bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Why Us</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">Why Choose CareLink?</motion.h2>
-            <motion.p variants={fadeUp} className="text-gray-500 dark:text-gray-400 mt-4 max-w-xl mx-auto text-lg">Built for students, designed for convenience.</motion.p>
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {whyUs.map((item, i) => (
-              <motion.div key={i} variants={fadeUp} custom={i} className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-yellow-400/20 group-hover:scale-110 transition-transform duration-300">
-                  <item.icon className="w-7 h-7 text-maroon-900" />
-                </div>
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{item.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
-            <motion.span variants={fadeUp} className="inline-block bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Testimonials</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">What Students Say</motion.h2>
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {testimonials.map((t, i) => (
-              <motion.div key={i} variants={fadeUp} custom={i}
-                className="bg-white dark:bg-gray-700 rounded-3xl p-6 lg:p-8 border border-gray-100 dark:border-gray-600 shadow-sm hover:shadow-xl transition-shadow duration-300">
-                <div className="flex mb-4">
-                  {[...Array(5)].map((_, j) => (<Star key={j} className={`w-4 h-4 ${j < t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-500'}`} />))}
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed italic mb-6">"{t.text}"</p>
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-600">
-                  <p className="font-semibold text-gray-900 dark:text-white text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{t.course}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      <section id="faq" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
-        <div className="max-w-3xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger} className="text-center mb-14 lg:mb-20">
-            <motion.span variants={fadeUp} className="inline-block bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">FAQ</motion.span>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight">Frequently Asked Questions</motion.h2>
-          </motion.div>
-
-          <div className="space-y-3">
-            {faqs.map((faq, i) => (
-              <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} custom={i}
-                className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} aria-expanded={openFaq === i}
-                  className={`w-full flex items-center justify-between p-5 lg:p-6 text-left font-semibold text-gray-900 dark:text-white text-sm lg:text-base hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors ${focusRing}`}>
-                  {faq.q}
-                  {openFaq === i ? <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />}
-                </button>
-                <AnimatePresence>
-                  {openFaq === i && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
-                      className="px-5 lg:px-6 pb-5 lg:pb-6 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{faq.a}</motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-maroon-900 via-maroon-800 to-maroon-950 relative overflow-hidden">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-500/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-10 right-10 w-72 h-72 bg-maroon-500/10 rounded-full blur-[100px]"></div>
-
-        <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">Ready to Take Control of Your Health?</motion.h2>
-            <motion.p variants={fadeUp} className="text-yellow-200/80 mt-4 max-w-lg mx-auto text-lg">Join PUP Biñan students using CareLink for faster, easier clinic services.</motion.p>
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-              <Link to="/register" className={`group inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-maroon-900 px-8 py-4 rounded-2xl font-bold text-lg hover:from-yellow-300 hover:to-yellow-400 transition-all duration-300 shadow-2xl shadow-yellow-400/20 ${focusRing}`}>
-                <span>Get Started Free</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/login" className={`inline-flex items-center justify-center space-x-2 border-2 border-white/40 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 hover:border-white/60 transition-all duration-300 ${focusRing}`}>
-                <span>Login</span>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      <footer className="bg-gray-950 py-16 lg:py-20 px-4 sm:px-6 lg:px-8 border-t border-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <img src={clinicLogo} alt="PUPBC CareLink logo" className="w-10 h-10 object-cover rounded-full" />
-              <span className="font-bold text-white text-xl">PUPBC CareLink</span>
-            </div>
-            <p className="text-gray-400 text-sm leading-relaxed">PUPBC CareLink: A QR-Integrated Health Information System with Self-Service Triage Kiosk for the PUP Biñan Campus Clinic.</p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Quick Links</h4>
-            <div className="space-y-2.5 text-sm text-gray-400">
-              <a href="#features" className="block hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="block hover:text-white transition-colors">How It Works</a>
-              <a href="#faq" className="block hover:text-white transition-colors">FAQ</a>
-              <Link to="/login" className="block hover:text-white transition-colors">Login</Link>
-              <Link to="/register" className="block hover:text-white transition-colors">Register</Link>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Contact</h4>
-            <div className="space-y-2.5 text-sm text-gray-400">
-              <div className="flex items-center space-x-2"><MapPin className="w-4 h-4 flex-shrink-0" /><span>PUP Biñan Campus Clinic</span></div>
-              <div className="flex items-center space-x-2"><Phone className="w-4 h-4 flex-shrink-0" /><span>(043) 123-4567</span></div>
-              <a href="mailto:pupbccarelink@gmail.com" className="flex items-center space-x-2 hover:text-white transition-colors"><Mail className="w-4 h-4 flex-shrink-0" /><span>pupbccarelink@gmail.com</span></a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
-            <div className="space-y-2.5 text-sm text-gray-400">
-              <p className="hover:text-white cursor-pointer transition-colors">Privacy Policy</p>
-              <p className="hover:text-white cursor-pointer transition-colors">Terms of Service</p>
-              <p className="hover:text-white cursor-pointer transition-colors">Data Protection</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto mt-12 lg:mt-16 pt-8 border-t border-white/5 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} PUPBC CareLink: A QR-Integrated Health Information System with Self-Service Triage Kiosk. All rights reserved. Polytechnic University of the Philippines — Biñan Campus.
-        </div>
-      </footer>
-
+      {description && (
+        <p className="mt-1.5 max-w-2xl text-[13px] leading-6 text-slate-500 sm:text-sm">
+          {description}
+        </p>
+      )}
     </div>
   );
-};
+}
 
-export default Landing;
+function FeatureCard({ feature }) {
+  const Icon = feature.icon;
+
+  const content = (
+    <>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f9e9ee] text-[#741126] sm:h-14 sm:w-14">
+        <Icon size={25} strokeWidth={1.9} />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-extrabold text-slate-900">
+          {feature.title}
+        </span>
+
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {feature.description}
+        </span>
+      </span>
+
+      <ChevronRight
+        size={18}
+        className="shrink-0 text-[#741126] transition-transform group-hover:translate-x-1"
+      />
+    </>
+  );
+
+  const classes =
+    'group flex min-w-0 items-center gap-3 rounded-2xl ' +
+    'border border-slate-200/90 bg-white p-3.5 text-left ' +
+    'shadow-sm transition-all duration-200 hover:-translate-y-0.5 ' +
+    'hover:border-rose-200 hover:shadow-lg sm:p-4';
+
+  if (feature.href.startsWith('#')) {
+    return (
+      <a href={feature.href} className={classes}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={feature.href} className={classes}>
+      {content}
+    </Link>
+  );
+}
+
+export default function Landing() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] =
+    useState(true);
+  const [announcementsError, setAnnouncementsError] =
+    useState(false);
+
+  const currentYear = new Date().getFullYear();
+
+  const closeMenu = () => setMobileMenuOpen(false);
+
+  const loadAnnouncements = useCallback(async (signal) => {
+    try {
+      setAnnouncementsError(false);
+
+      const response = await api.get('/announcements', {
+        signal,
+      });
+
+      const payload = response.data?.data;
+
+      const items = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      if (!signal?.aborted) {
+        setAnnouncements(items.slice(0, 3));
+      }
+    } catch (error) {
+      if (
+        error?.code !== 'ERR_CANCELED' &&
+        !signal?.aborted
+      ) {
+        setAnnouncementsError(true);
+      }
+    } finally {
+      if (!signal?.aborted) {
+        setAnnouncementsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    loadAnnouncements(controller.signal);
+
+    return () => controller.abort();
+  }, [loadAnnouncements]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [mobileMenuOpen]);
+
+  return (
+    <div
+      id="home"
+      className="min-h-screen overflow-x-hidden bg-[#f8f9fc] text-slate-900"
+    >
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+          <Link
+            to="/"
+            onClick={closeMenu}
+            className="flex min-w-0 shrink-0 items-center gap-2.5"
+          >
+            <img
+              src={clinicLogo}
+              alt="PUPBC CareLink clinic logo"
+              className="h-11 w-11 shrink-0 rounded-full bg-white object-cover sm:h-12 sm:w-12"
+            />
+
+            <span className="block truncate text-base font-black tracking-tight text-[#701126] sm:text-lg">
+              PUPBC CareLink
+            </span>
+          </Link>
+
+          <nav
+            aria-label="Main navigation"
+            className="hidden items-center gap-1 lg:flex"
+          >
+            {NAVIGATION.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="rounded-xl px-3 py-2 text-[13px] font-semibold text-slate-600 transition-colors hover:bg-rose-50 hover:text-[#741126]"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="hidden items-center gap-2 lg:flex">
+            <Link
+              to="/register"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-5 text-sm font-bold text-[#741126] transition hover:bg-rose-100"
+            >
+              <UserRoundPlus size={17} />
+              Get Started
+            </Link>
+
+            <Link
+              to="/login"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#741126] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#4d0d1b]"
+            >
+              <LogIn size={17} />
+              Login
+            </Link>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setMobileMenuOpen((open) => !open)
+            }
+            aria-label={
+              mobileMenuOpen
+                ? 'Close navigation'
+                : 'Open navigation'
+            }
+            aria-expanded={mobileMenuOpen}
+            aria-controls="landing-mobile-menu"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#741126] hover:bg-rose-50 lg:hidden"
+          >
+            {mobileMenuOpen ? (
+              <X size={23} />
+            ) : (
+              <Menu size={23} />
+            )}
+          </button>
+        </div>
+
+        {mobileMenuOpen && (
+          <nav
+            id="landing-mobile-menu"
+            aria-label="Mobile navigation"
+            className="border-t border-slate-100 bg-white px-4 py-3 shadow-xl lg:hidden"
+          >
+            <div className="mx-auto max-w-xl space-y-1">
+              {NAVIGATION.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  className="block rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-rose-50 hover:text-[#741126]"
+                >
+                  {item.label}
+                </a>
+              ))}
+
+              <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+                <Link
+                  to="/register"
+                  onClick={closeMenu}
+                  className="flex min-h-11 items-center justify-center rounded-xl bg-rose-50 text-sm font-bold text-[#741126]"
+                >
+                  Get Started
+                </Link>
+
+                <Link
+                  to="/login"
+                  onClick={closeMenu}
+                  className="flex min-h-11 items-center justify-center rounded-xl bg-[#741126] text-sm font-bold text-white"
+                >
+                  Login
+                </Link>
+              </div>
+            </div>
+          </nav>
+        )}
+      </header>
+
+      {/* HERO */}
+      <section
+        className="relative isolate min-h-[540px] overflow-hidden bg-[#4d0d1b] sm:min-h-[570px] lg:min-h-[500px]"
+        aria-labelledby="landing-title"
+      >
+        <img
+          src={campusPhoto}
+          alt="Polytechnic University of the Philippines Biñan Campus building"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-[60%_center] lg:object-center"
+          fetchPriority="high"
+        />
+
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#4d0d1b]/98 via-[#611322]/90 to-[#741126]/35 lg:via-[#611322]/78 lg:to-[#4d0d1b]/10" />
+
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#4d0d1b]/75 via-transparent to-transparent" />
+
+        <div className="mx-auto flex min-h-[540px] max-w-[1440px] flex-col justify-center px-5 py-14 sm:min-h-[570px] sm:px-8 lg:min-h-[500px] lg:px-14 lg:py-16">
+          <div className="max-w-[690px]">
+            <p className="text-[10px] font-bold uppercase leading-5 tracking-[0.19em] text-rose-100 sm:text-xs">
+              Polytechnic University of the Philippines
+              <span className="hidden sm:inline">
+                {' '}—{' '}
+              </span>
+              <span className="block sm:inline">
+                Biñan Campus
+              </span>
+            </p>
+
+            <div className="mt-3 h-0.5 w-14 bg-rose-200/80" />
+
+            <h1
+              id="landing-title"
+              className="mt-5 text-[33px] font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[54px]"
+            >
+              PUPBC CareLink
+            </h1>
+
+            <p className="mt-3 max-w-[630px] text-xl font-bold leading-tight text-white sm:text-[29px]">
+              A QR Integrated Health Information System
+              with Self-service Triage Kiosk
+            </p>
+
+            <p className="mt-5 max-w-xl text-[13px] leading-6 text-rose-50/90 sm:text-[15px] sm:leading-7">
+              Book appointments, check in with QR, access
+              your clinic health records and receive
+              important updates — all in one place.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 min-[410px]:flex-row">
+              <Link
+                to="/register"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b92e4e] to-[#87172f] px-6 text-sm font-extrabold text-white shadow-lg shadow-black/15 transition hover:-translate-y-0.5 hover:from-[#c13959]"
+              >
+                Get Started
+                <ArrowRight size={17} />
+              </Link>
+
+              <a
+                href="#services"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/60 bg-white/5 px-6 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/15"
+              >
+                View Services
+                <ChevronRight size={17} />
+              </a>
+            </div>
+
+            <div className="mt-9 grid max-w-xl grid-cols-3 gap-3 border-t border-white/20 pt-5 text-white">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <Smartphone size={17} />
+                </span>
+                <span>
+                  <span className="block text-[11px] font-bold">
+                    Accessible
+                  </span>
+                  <span className="block text-[10px] leading-4 text-rose-100/75">
+                    Across devices
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <ShieldCheck size={17} />
+                </span>
+                <span>
+                  <span className="block text-[11px] font-bold">
+                    Protected
+                  </span>
+                  <span className="block text-[10px] leading-4 text-rose-100/75">
+                    Account access
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <Heart size={17} />
+                </span>
+                <span>
+                  <span className="block text-[11px] font-bold">
+                    Student-focused
+                  </span>
+                  <span className="block text-[10px] leading-4 text-rose-100/75">
+                    Campus healthcare
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <p className="mt-6 font-serif text-sm italic text-rose-100/85 sm:text-base">
+              “Smarter campus healthcare for every
+              Iskolar ng Bayan.”
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURE CARDS */}
+      <section
+        aria-label="CareLink features"
+        className="relative z-10 mx-auto -mt-6 max-w-[1440px] px-4 sm:px-6 lg:px-10"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((feature) => (
+            <FeatureCard
+              key={feature.title}
+              feature={feature}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* HOW CARELINK WORKS + CLINIC PHOTO */}
+      <section
+        id="about"
+        className="mx-auto max-w-[1440px] scroll-mt-24 px-4 pt-12 sm:px-6 lg:px-10 lg:pt-16"
+      >
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
+          <div
+            id="how-it-works"
+            className="scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7"
+          >
+            <SectionTitle
+              eyebrow="Get Started"
+              title="How CareLink Works"
+              description="Four simple steps to access campus clinic services."
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {STEPS.map((step, index) => {
+                const Icon = step.icon;
+
+                return (
+                  <div
+                    key={step.title}
+                    className="relative rounded-2xl border border-rose-100 bg-gradient-to-b from-white to-[#fff8fa] p-4"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#741126] text-xs font-extrabold text-white">
+                        {index + 1}
+                      </span>
+
+                      <Icon
+                        size={21}
+                        className="text-[#8b1730]"
+                      />
+                    </div>
+
+                    <h3 className="text-[13px] font-extrabold text-slate-900">
+                      {step.title}
+                    </h3>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      {step.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-rose-50 px-4 py-3">
+              <p className="text-xs font-medium text-[#741126]">
+                Your first clinic appointment starts with
+                your CareLink account.
+              </p>
+
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-1 text-xs font-extrabold text-[#741126] hover:underline"
+              >
+                Create an account
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </div>
+
+          {/* A HEALTHIER YOU — ACTUAL CLINIC PHOTO */}
+          <div className="relative isolate min-h-[320px] overflow-hidden rounded-3xl border border-slate-200/80 bg-[#4d0d1b] text-white shadow-sm sm:min-h-[360px]">
+            <img
+              src={clinicScene}
+              alt="Students waiting and completing forms inside a clinic"
+              loading="lazy"
+              className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+            />
+
+            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#4d0d1b]/95 via-[#741126]/65 to-[#4d0d1b]/5" />
+
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#4d0d1b]/70 via-transparent to-transparent" />
+
+            <div className="flex h-full min-h-[320px] flex-col justify-between p-5 sm:min-h-[360px] sm:p-7">
+              <div className="max-w-[255px]">
+                <span className="inline-flex rounded-lg border border-white/25 bg-[#741126]/85 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white backdrop-blur-sm">
+                  A Healthier You
+                </span>
+
+                <h2 className="mt-5 text-2xl font-extrabold leading-tight sm:text-[28px]">
+                 
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-white/95">
+                  Quality healthcare support for PUPBC student community.
+                </p>
+              </div>
+
+              <p className="max-w-[260px] border-l-2 border-rose-200 pl-3 text-xs font-medium leading-5 text-rose-50 sm:text-sm">
+                We care for you - your health and well-being is our priority
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SERVICES + ANNOUNCEMENTS */}
+      <section
+        id="services"
+        className="mx-auto max-w-[1440px] scroll-mt-24 px-4 py-7 sm:px-6 lg:px-10"
+      >
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+            <SectionTitle
+              eyebrow="Student Health Services"
+              title="Our Clinic Services"
+              description="Choose from the clinic appointment services available to PUP Biñan students."
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              {SERVICES.map((service) => {
+                const Icon = service.icon;
+
+                return (
+                  <Link
+                    key={service.title}
+                    to="/login"
+                    className="group flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-rose-200 hover:bg-rose-50/40 sm:min-h-[155px]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f9e9ee] text-[#741126]">
+                      <Icon size={21} />
+                    </span>
+
+                    <h3 className="mt-3 text-[13px] font-extrabold text-slate-900">
+                      {service.title}
+                    </h3>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {service.description}
+                    </p>
+
+                    <ArrowRight
+                      size={15}
+                      className="mt-3 text-[#741126] transition-transform group-hover:translate-x-1"
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 text-xs leading-5 text-slate-500">
+              Appointment availability and service
+              procedures depend on the clinic schedule.
+            </p>
+          </div>
+
+          <div
+            id="announcements"
+            className="scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7"
+          >
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#8b1730]">
+                  Campus Updates
+                </p>
+
+                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
+                  Latest Announcements
+                </h2>
+              </div>
+
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f9e9ee] text-[#741126]">
+                <Megaphone size={21} />
+              </span>
+            </div>
+
+            {announcementsLoading ? (
+              <div
+                className="space-y-3"
+                aria-label="Loading announcements"
+              >
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="animate-pulse rounded-xl border border-slate-100 p-3"
+                  >
+                    <div className="h-3 w-3/4 rounded bg-slate-200" />
+                    <div className="mt-3 h-2 w-1/3 rounded bg-slate-100" />
+                  </div>
+                ))}
+              </div>
+            ) : announcementsError ? (
+              <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center">
+                <p className="text-sm font-semibold text-slate-700">
+                  Unable to load announcements.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAnnouncementsLoading(true);
+                    loadAnnouncements();
+                  }}
+                  className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#741126] hover:underline"
+                >
+                  <RefreshCw size={15} />
+                  Try again
+                </button>
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="rounded-2xl bg-slate-50 px-4 py-7 text-center">
+                <Bell
+                  size={26}
+                  className="mx-auto text-slate-400"
+                />
+
+                <p className="mt-3 text-sm font-semibold text-slate-700">
+                  No announcements yet
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Published clinic announcements will
+                  appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {announcements.map((announcement) => (
+                  <div
+                    key={announcement.id}
+                    className="flex gap-3 py-3 first:pt-0"
+                  >
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#741126]">
+                      <Megaphone size={17} />
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="line-clamp-2 text-[13px] font-bold text-slate-900">
+                        {announcement.title}
+                      </h3>
+
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                        {announcement.content}
+                      </p>
+
+                      <p className="mt-1.5 text-[11px] font-medium text-slate-400">
+                        {formatAnnouncementDate(
+                          announcement.published_at ||
+                            announcement.created_at
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-3">
+              <p className="text-xs leading-5 text-[#741126]">
+                Sign in to receive your personal clinic
+                notifications and appointment updates.
+              </p>
+
+              <Link
+                to="/login"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold text-[#741126] hover:underline"
+              >
+                Open Student Portal
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-[1440px] px-4 pb-10 sm:px-6 lg:px-10">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+          <SectionTitle
+            eyebrow="Questions & Answers"
+            title="Frequently Asked Questions"
+            description="Quick answers about using the CareLink Student Portal."
+          />
+
+          <div className="grid items-start gap-x-5 gap-y-2 lg:grid-cols-2">
+            {FAQS.map((faq, index) => (
+              <div
+                key={faq.question}
+                className="overflow-hidden rounded-xl border border-slate-200"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenFaq((current) =>
+                      current === index ? null : index
+                    )
+                  }
+                  aria-expanded={openFaq === index}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left text-[13px] font-bold text-slate-800 hover:bg-rose-50"
+                >
+                  {faq.question}
+
+                  <ChevronDown
+                    size={17}
+                    className={`shrink-0 text-[#741126] transition-transform ${
+                      openFaq === index
+                        ? 'rotate-180'
+                        : ''
+                    }`}
+                  />
+                </button>
+
+                {openFaq === index && (
+                  <div className="border-t border-slate-100 px-4 py-3 text-xs leading-6 text-slate-600">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* RESPONSIVE BANNER */}
+      <section className="relative overflow-hidden bg-[#4d0d1b] text-white">
+        <img
+          src={campusPhoto}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover opacity-15"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4d0d1b] via-[#741126]/90 to-[#4d0d1b]/85" />
+
+        <div className="relative mx-auto grid max-w-[1440px] gap-7 px-5 py-9 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:px-14">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-rose-200/75">
+              Better access. A healthier campus.
+            </p>
+
+            <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl">
+              Designed for PUP Biñan Students
+            </h2>
+
+            <p className="mt-2 max-w-lg text-sm leading-6 text-white/70">
+              Use CareLink to manage your campus clinic
+              transactions across your devices.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <Monitor
+                size={23}
+                className="mx-auto text-rose-200"
+              />
+
+              <p className="mt-2 text-xs font-bold">
+                Desktop
+              </p>
+
+              <p className="mt-1 text-[11px] text-white/60">
+                Full experience
+              </p>
+            </div>
+
+            <div>
+              <Smartphone
+                size={23}
+                className="mx-auto text-rose-200"
+              />
+
+              <p className="mt-2 text-xs font-bold">
+                Tablet
+              </p>
+
+              <p className="mt-1 text-[11px] text-white/60">
+                On the go
+              </p>
+            </div>
+
+            <div>
+              <Smartphone
+                size={23}
+                className="mx-auto text-rose-200"
+              />
+
+              <p className="mt-2 text-xs font-bold">
+                Mobile
+              </p>
+
+              <p className="mt-1 text-[11px] text-white/60">
+                Within reach
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACT + FOOTER */}
+      <footer
+        id="contact"
+        className="scroll-mt-24 bg-white"
+      >
+        <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-9 sm:px-8 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr] lg:px-14">
+          <div>
+            <div className="flex items-center gap-3">
+              <img
+                src={clinicLogo}
+                alt="PUPBC clinic logo"
+                className="h-11 w-11 rounded-full object-cover"
+              />
+
+              <p className="text-sm font-black text-[#741126]">
+                PUPBC CareLink
+              </p>
+            </div>
+
+            <p className="mt-4 max-w-sm text-xs leading-6 text-slate-500">
+              A QR Integrated Health Information System
+              with Self-service Triage Kiosk for
+              PUP Biñan Campus.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Quick Links
+            </h3>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-medium text-slate-600">
+              {NAVIGATION.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="hover:text-[#741126]"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Campus Clinic
+            </h3>
+
+            <p className="mt-3 flex items-start gap-2 text-xs leading-6 text-slate-600">
+              <MapPin
+                size={17}
+                className="mt-0.5 shrink-0 text-[#741126]"
+              />
+
+              <span>
+                Polytechnic University of the Philippines
+                <br />
+                Biñan Campus
+                <br />
+                Biñan, Laguna
+              </span>
+            </p>
+
+            <p className="mt-3 text-xs leading-6 text-slate-500">
+              For medical concerns or account assistance,
+              contact your campus clinic through its
+              official channels.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100">
+          <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-2 px-5 py-5 text-center text-[11px] text-slate-400 sm:flex-row sm:text-left lg:px-14">
+            <span>
+              © {currentYear} PUPBC CareLink.
+              All rights reserved.
+            </span>
+
+            <span>
+              Smarter campus healthcare for every
+              Iskolar ng Bayan.
+            </span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
