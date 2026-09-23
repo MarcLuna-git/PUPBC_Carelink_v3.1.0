@@ -9,6 +9,7 @@ use App\Models\AppointmentSlot;
 use App\Models\Notification;
 use App\Models\QRCode;
 use App\Services\ClinicQueue;
+use App\Services\StudentAppointmentMail;
 use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -246,6 +247,23 @@ class AppointmentController extends Controller
                             Str::random(8)
                         ),
                 ]);
+
+            Notification::create([
+                'user_id' => $appointment->user_id,
+                'type' => 'appointment_pending',
+                'title' => 'Appointment request received',
+                'message' => 'Your appointment request for '
+                    . $appointment->appointment_date->format('M j, Y')
+                    . ' at ' . $appointment->time_slot
+                    . ' is pending clinic approval.',
+                'data' => [
+                    'appointment_id' => $appointment->id,
+                    'reference_number' => $appointment->reference_number,
+                    'status' => 'pending',
+                ],
+                'read' => false,
+            ]);
+            app(StudentAppointmentMail::class)->afterCommit($appointment);
 
             Cache::forget(
                 'nurse_dashboard_stats'
@@ -593,6 +611,7 @@ class AppointmentController extends Controller
                     ],
                     'read' => false,
                 ]);
+                app(StudentAppointmentMail::class)->afterCommit($appointment);
 
                 Cache::forget(
                     'nurse_dashboard_stats'
