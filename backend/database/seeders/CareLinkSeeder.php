@@ -36,7 +36,7 @@ class CareLinkSeeder extends Seeder
                 'last_name' => 'Doe',
                 'password' => Hash::make('nurse'),
                 'role' => 'nurse',
-                'status' => 'active',
+                'status' => null,
                 'email_verified_at' => now(),
             ]
         );
@@ -54,7 +54,7 @@ class CareLinkSeeder extends Seeder
                 'email' => 'juan@example.com',
                 'password' => Hash::make('student'),
                 'role' => 'student',
-                'status' => 'active',
+                'status' => null,
                 'birthday' => '2002-05-15',
                 'email_verified_at' => now(),
             ]

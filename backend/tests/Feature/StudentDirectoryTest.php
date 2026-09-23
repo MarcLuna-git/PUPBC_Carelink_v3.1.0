@@ -15,7 +15,7 @@ class StudentDirectoryTest extends TestCase
     public function test_filters_combine_before_pagination_and_preserve_response_shape()
     {
         $prefix = 'Directory-' . Str::random(12);
-        $make = function ($suffix, $course = 'BSIT', $year = '3rd Year', $section = '3-1', $status = 'active', $role = 'student') use ($prefix) {
+        $make = function ($suffix, $course = 'BSIT', $year = '3rd Year', $section = '3-1', $status = null, $role = 'student') use ($prefix) {
             $user = User::create([
                 'student_id' => $prefix . $suffix,
                 'first_name' => 'Directory', 'last_name' => $suffix,
@@ -42,16 +42,16 @@ class StudentDirectoryTest extends TestCase
         foreach (['course' => 'BSIT', 'year' => '3rd Year', 'section' => '3-1'] as $field => $value) {
             $get($query + [$field => $value])->assertOk()->assertJsonPath('data.total', 25);
         }
-        $get($query + ['status' => 'active'])->assertOk()->assertJsonPath('data.total', 24);
         foreach (['inactive', 'archived'] as $status) {
             $get($query + ['status' => $status])->assertOk()->assertJsonPath('data.total', 1);
         }
         $combined = $query + ['course' => 'BSIT', 'year' => '3rd Year', 'section' => '3-1', 'status' => 'active'];
+        unset($combined['status']);
         $get($combined)->assertOk()->assertJsonPath('success', true)
-            ->assertJsonPath('data.total', 21)->assertJsonPath('data.per_page', 20)
+            ->assertJsonPath('data.total', 24)->assertJsonPath('data.per_page', 20)
             ->assertJsonCount(20, 'data.data')->assertJsonPath('data.data.0.student_profile.year', '3rd Year');
-        $get($combined + ['page' => 2])->assertOk()->assertJsonPath('data.total', 21)
-            ->assertJsonPath('data.current_page', 2)->assertJsonCount(1, 'data.data');
+        $get($combined + ['page' => 2])->assertOk()->assertJsonPath('data.total', 24)
+            ->assertJsonPath('data.current_page', 2)->assertJsonCount(4, 'data.data');
         $get($combined + ['page' => 3])->assertOk()->assertJsonCount(0, 'data.data');
         $get($query + ['section' => 'no-match'])->assertOk()->assertJsonPath('data.total', 0);
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Minus, Edit2, Trash2, Loader2, Pill, AlertTriangle, Clock, Package, Filter, ChevronDown } from 'lucide-react';
+import { Search, Plus, Minus, Edit2, Trash2, Loader2, Pill, AlertTriangle, Clock, Package, Filter, ChevronDown, ClipboardList } from 'lucide-react';
 import api from '../../../services/api';
 
 const NurseMedicine = () => {
@@ -27,6 +27,12 @@ const NurseMedicine = () => {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteMedicine, setDeleteMedicine] = useState(null);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchMedicine, setBatchMedicine] = useState(null);
+  const [batchForm, setBatchForm] = useState({ lot_number: '', quantity: 1, expiry_date: '', received_at: '', supplier: '', reference: '' });
+  const [showMovementModal, setShowMovementModal] = useState(false);
+  const [movementMedicine, setMovementMedicine] = useState(null);
+  const [movementForm, setMovementForm] = useState({ movement_type: 'dispensed', quantity: 1, batch_id: '', reason: '' });
 
   useEffect(() => {
     fetchMedicines();
@@ -152,6 +158,40 @@ const NurseMedicine = () => {
     } finally {
       setFormLoading(false);
     }
+  };
+
+  const openBatchModal = (medicine) => {
+    setBatchMedicine(medicine);
+    setBatchForm({ lot_number: '', quantity: 1, expiry_date: '', received_at: '', supplier: '', reference: '' });
+    setShowBatchModal(true);
+  };
+
+  const handleBatchReceive = async () => {
+    if (!batchMedicine) return;
+    setFormLoading(true);
+    try {
+      await api.post(`/nurse/medicines/${batchMedicine.id}/batches`, batchForm);
+      setMessageType('success'); setMessage('Batch received successfully.'); setShowBatchModal(false); fetchMedicines();
+    } catch (err) {
+      setMessageType('error'); setMessage(err.response?.data?.message || 'Failed to receive batch.');
+    } finally { setFormLoading(false); setTimeout(() => setMessage(''), 4000); }
+  };
+
+  const openMovementModal = (medicine) => {
+    setMovementMedicine(medicine);
+    setMovementForm({ movement_type: 'dispensed', quantity: 1, batch_id: '', reason: '' });
+    setShowMovementModal(true);
+  };
+
+  const handleMovement = async () => {
+    if (!movementMedicine || !movementForm.reason.trim()) return;
+    setFormLoading(true);
+    try {
+      await api.post(`/nurse/medicines/${movementMedicine.id}/movements`, movementForm);
+      setMessageType('success'); setMessage('Stock movement recorded.'); setShowMovementModal(false); fetchMedicines();
+    } catch (err) {
+      setMessageType('error'); setMessage(err.response?.data?.message || 'Failed to record movement.');
+    } finally { setFormLoading(false); setTimeout(() => setMessage(''), 4000); }
   };
 
   const handleDelete = async () => {
@@ -285,6 +325,8 @@ const NurseMedicine = () => {
                 </div>
 
                 <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <button onClick={() => openBatchModal(med)} title="Receive batch" className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><Package className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => openMovementModal(med)} title="Record stock movement" className="p-1.5 text-gray-400 hover:text-maroon-600 hover:bg-maroon-50 rounded-lg transition"><ClipboardList className="w-3.5 h-3.5" /></button>
                   <button onClick={() => openStockModal(med, 'add')}
                     className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-semibold hover:bg-green-100 transition">
                     <Plus className="w-3 h-3" /><span>Add</span>
@@ -389,6 +431,39 @@ const NurseMedicine = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showBatchModal && batchMedicine && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Receive Medicine Batch</h2>
+            <p className="text-sm text-gray-500 mb-4">{batchMedicine.name}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input className={`${inputClass} col-span-2`} placeholder="Lot/batch number *" value={batchForm.lot_number} onChange={e => setBatchForm({ ...batchForm, lot_number: e.target.value })} required />
+              <input className={inputClass} type="number" min="1" placeholder="Quantity" value={batchForm.quantity} onChange={e => setBatchForm({ ...batchForm, quantity: Number(e.target.value) || 1 })} required />
+              <input className={inputClass} type="date" value={batchForm.expiry_date} onChange={e => setBatchForm({ ...batchForm, expiry_date: e.target.value })} />
+              <input className={inputClass} type="date" value={batchForm.received_at} onChange={e => setBatchForm({ ...batchForm, received_at: e.target.value })} />
+              <input className={inputClass} placeholder="Supplier (optional)" value={batchForm.supplier} onChange={e => setBatchForm({ ...batchForm, supplier: e.target.value })} />
+              <input className={`${inputClass} col-span-2`} placeholder="Reference (optional)" value={batchForm.reference} onChange={e => setBatchForm({ ...batchForm, reference: e.target.value })} />
+            </div>
+            <div className="flex gap-3 mt-5"><button onClick={() => setShowBatchModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleBatchReceive} disabled={formLoading || !batchForm.lot_number.trim()} className="flex-1 py-3 bg-green-600 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Receive Batch'}</button></div>
+          </div>
+        </div>
+      )}
+
+      {showMovementModal && movementMedicine && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Record Stock Movement</h2>
+            <p className="text-sm text-gray-500 mb-4">{movementMedicine.name}</p>
+            <div className="space-y-3">
+              <select className={inputClass} value={movementForm.movement_type} onChange={e => setMovementForm({ ...movementForm, movement_type: e.target.value })}><option value="dispensed">Dispensed</option><option value="wasted">Wasted</option><option value="expired">Expired</option><option value="adjustment">Adjustment</option></select>
+              <input className={inputClass} type="number" min="1" value={movementForm.quantity} onChange={e => setMovementForm({ ...movementForm, quantity: Number(e.target.value) || 1 })} />
+              <textarea className={inputClass} rows={3} placeholder="Reason *" value={movementForm.reason} onChange={e => setMovementForm({ ...movementForm, reason: e.target.value })} required />
+            </div>
+            <div className="flex gap-3 mt-5"><button onClick={() => setShowMovementModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleMovement} disabled={formLoading || !movementForm.reason.trim()} className="flex-1 py-3 bg-maroon-800 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Record Movement'}</button></div>
           </div>
         </div>
       )}

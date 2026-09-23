@@ -48,6 +48,44 @@ class AppointmentController extends Controller
         $request->validate(['reason' => 'required|string|max:500']);
         return $this->decide($id, 'rejected', $request->reason);
     }
+    public function cancel(Request $request, $id)
+    {
+        $data = $request->validate(['reason' => 'required|string|max:500']);
+
+        $result = DB::transaction(function () use ($id, $data) {
+            \App\Services\ClinicQueue::lock();
+            $appointment = Appointment::findOrFail($id);
+            abort_unless(in_array($appointment->status, ['pending', 'rejected'], true), 422, 'Only pending or rejected appointments can be cancelled by a nurse.');
+            abort_if($appointment->checkins()->exists(), 409, 'A checked-in appointment cannot be cancelled.');
+
+            $appointment->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => $data['reason'],
+                'cancelled_by' => auth()->id(),
+                'cancelled_at' => now(),
+            ]);
+
+            Notification::create([
+                'user_id' => $appointment->user_id,
+                'type' => 'appointment_cancelled',
+                'title' => 'Appointment Cancelled',
+                'message' => 'Your appointment was cancelled: ' . $data['reason'],
+                'data' => ['appointment_id' => $appointment->id],
+            ]);
+
+            AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'appointment_cancelled',
+                'description' => 'Cancelled appointment ' . $appointment->id,
+                'ip_address' => request()->ip(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Appointment cancelled.']);
+        }, 3);
+
+        Cache::forget('nurse_dashboard_stats');
+        return $result;
+    }
     private function decide($id, $status, $reason = null)
     {
         $result = DB::transaction(function () use ($id, $status, $reason) {

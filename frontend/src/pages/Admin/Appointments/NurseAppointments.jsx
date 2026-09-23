@@ -13,6 +13,8 @@ const NurseAppointments = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const requestInFlight = useRef(false);
@@ -97,6 +99,24 @@ const NurseAppointments = () => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) return;
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await api.patch(`/nurse/appointments/${cancelModal}/cancel`, { reason: cancelReason }, { headers: { Authorization: `Bearer ${token}` } });
+      showMessage('Appointment cancelled.', 'success');
+      setCancelModal(null);
+      setCancelReason('');
+      setSelectedAppointment(null);
+      fetchAppointments();
+    } catch (err) {
+      showMessage(err.response?.data?.message || 'Failed to cancel', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleComplete = () => { window.location.assign('/nurse/consultation'); };
 
   const showMessage = (msg, type) => {
@@ -127,6 +147,7 @@ const NurseAppointments = () => {
     completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800/20',
     cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800/20',
     rejected: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800/20',
+    expired: 'bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-300 border-gray-200 dark:border-gray-700',
   };
 
   const statusConfig = {
@@ -135,6 +156,7 @@ const NurseAppointments = () => {
     completed: { icon: CheckCircle, color: 'text-blue-500' },
     cancelled: { icon: XCircle, color: 'text-red-500' },
     rejected: { icon: XCircle, color: 'text-red-500' },
+    expired: { icon: XCircle, color: 'text-gray-500' },
   };
 
   const counts = {
@@ -283,6 +305,15 @@ const NurseAppointments = () => {
                         </button>
                       </div>
                     )}
+                    {['pending', 'rejected'].includes(app.status) && (
+                      <button
+                        onClick={() => setCancelModal(app.id)}
+                        disabled={actionLoading}
+                        className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                        title="Cancel">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -400,6 +431,14 @@ const NurseAppointments = () => {
                       Open Clinic Queue
                     </button>
                   )}
+                  {['pending', 'rejected'].includes(selectedAppointment.status) && (
+                    <button
+                      onClick={() => setCancelModal(selectedAppointment.id)}
+                      disabled={actionLoading}
+                      className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm">
+                      Cancel Appointment
+                    </button>
+                  )}
                   <button onClick={() => setSelectedAppointment(null)} 
                     className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm">
                     Close
@@ -450,6 +489,34 @@ const NurseAppointments = () => {
                   {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                   Reject
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cancelModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setCancelModal(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-sm shadow-2xl p-6"
+              onClick={e => e.stopPropagation()}>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white text-center">Cancel Appointment</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">Please provide a cancellation reason.</p>
+              <textarea
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="Enter reason for cancellation..."
+                rows={3}
+                className="w-full mt-4 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20 resize-none"
+              />
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => { setCancelModal(null); setCancelReason(''); }} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl text-sm">Back</button>
+                <button onClick={handleCancel} disabled={!cancelReason.trim() || actionLoading} className="flex-1 py-3 bg-gray-700 text-white font-semibold rounded-2xl text-sm disabled:opacity-50">{actionLoading ? 'Cancelling...' : 'Confirm'}</button>
               </div>
             </motion.div>
           </motion.div>

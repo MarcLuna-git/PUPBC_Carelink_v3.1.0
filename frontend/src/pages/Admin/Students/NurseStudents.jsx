@@ -28,6 +28,7 @@ export default function NurseStudents() {
   const [saving, setSaving] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [listRefresh, setListRefresh] = useState(0);
+  const [statusSaving, setStatusSaving] = useState(false);
   const filtered = Object.values(filters).some(Boolean);
 
   useEffect(() => {
@@ -69,6 +70,27 @@ export default function NurseStudents() {
     catch (err) { setEmergencyError(Object.values(err.response?.data?.errors || {}).flat().join(' ') || err.response?.data?.message || 'Unable to save emergency encounter.'); }
     finally { setSaving(false); }
   };
+  const archiveStudent = async () => {
+    const reason = window.prompt('Reason for archiving this student:');
+    if (!reason?.trim() || statusSaving) return;
+    setStatusSaving(true); setDetailError('');
+    try {
+      await api.patch(`/nurse/students/${selectedId}/archive`, { reason: reason.trim() });
+      setRefresh(value => value + 1); setListRefresh(value => value + 1);
+    } catch (err) {
+      setDetailError(err.response?.data?.message || 'Unable to archive student.');
+    } finally { setStatusSaving(false); }
+  };
+  const restoreStudent = async () => {
+    if (statusSaving || !window.confirm('Restore this student account?')) return;
+    setStatusSaving(true); setDetailError('');
+    try {
+      await api.patch(`/nurse/students/${selectedId}/restore`);
+      setRefresh(value => value + 1); setListRefresh(value => value + 1);
+    } catch (err) {
+      setDetailError(err.response?.data?.message || 'Unable to restore student.');
+    } finally { setStatusSaving(false); }
+  };
   const close = () => { setSelectedId(null); setEmergencyOpen(false); setEmergency(emptyEmergency); setDetailError(''); setEmergencyError(''); };
 
   return <div className="mx-auto max-w-7xl space-y-5 text-gray-900 dark:text-gray-100">
@@ -78,7 +100,7 @@ export default function NurseStudents() {
       <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-700"><h2 className="text-sm font-semibold">Student directory</h2><span className="text-xs text-gray-500">Last name, A–Z</span></div>
       {listError ? <div role="alert" className="space-y-3 p-8 text-center"><p className="text-sm text-red-600">{listError}</p><button className={secondary} onClick={() => setListRefresh(value => value + 1)}>Try again</button></div> : <><StudentDirectory students={students} loading={loading} filtered={filtered} onClear={clearFilters} onView={id => { setSelectedId(id); setTab('Overview'); }} /><Pagination meta={meta} page={page} onPage={setPage} loading={loading} /></>}
     </section>
-    {selectedId && <StudentDetailsModal student={selected} loading={detailLoading} error={detailError} appointments={appointments} history={history} tab={tab} onTab={setTab} onClose={close} emergencyOpen={emergencyOpen} onEmergency={() => { setEmergencyError(''); setEmergencyOpen(true); }} />}
+    {selectedId && <StudentDetailsModal student={selected} loading={detailLoading} error={detailError} appointments={appointments} history={history} tab={tab} onTab={setTab} onClose={close} emergencyOpen={emergencyOpen} onEmergency={() => { setEmergencyError(''); setEmergencyOpen(true); }} onArchive={archiveStudent} onRestore={restoreStudent} statusSaving={statusSaving} />}
     {emergencyOpen && selectedId && <EmergencyModal emergency={emergency} onChange={(field, value) => setEmergency(previous => ({ ...previous, [field]: value }))} onSubmit={submitEmergency} onClose={() => setEmergencyOpen(false)} saving={saving} error={emergencyError} />}
   </div>;
 }

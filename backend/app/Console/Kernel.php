@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('appointments:expire')->dailyAt('00:05');
     }
 
     /** @return void */
