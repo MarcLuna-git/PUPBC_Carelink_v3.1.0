@@ -51,7 +51,8 @@ class Appointment extends Model
     ];
 
     protected $casts = [
-        'appointment_date' => 'date',
+        // A clinic calendar date is not an instant; never serialize it in UTC.
+        'appointment_date' => 'date:Y-m-d',
         'approved_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];

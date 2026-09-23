@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Nurse;
 
 use App\Http\Controllers\Controller;
+use App\Support\DatabaseSearch;
 use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Notification;
@@ -19,9 +20,9 @@ class StudentController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('student_id', 'like', "%{$request->search}%");
+                $q->where('first_name', DatabaseSearch::like($q), "%{$request->search}%")
+                  ->orWhere('last_name', DatabaseSearch::like($q), "%{$request->search}%")
+                  ->orWhere('student_id', DatabaseSearch::like($q), "%{$request->search}%");
             });
         }
 
@@ -51,9 +52,9 @@ class StudentController extends Controller
     {
         $students = User::where('role', 'student')
             ->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', "%{$request->q}%")
-                  ->orWhere('last_name', 'like', "%{$request->q}%")
-                  ->orWhere('student_id', 'like', "%{$request->q}%");
+                $q->where('first_name', DatabaseSearch::like($q), "%{$request->q}%")
+                  ->orWhere('last_name', DatabaseSearch::like($q), "%{$request->q}%")
+                  ->orWhere('student_id', DatabaseSearch::like($q), "%{$request->q}%");
             })
             ->limit(10)->get();
 
@@ -79,12 +80,12 @@ class StudentController extends Controller
 
             abort_if(Appointment::where('user_id', $student->id)
                 ->where('status', 'approved')
-                ->whereDate('appointment_date', '>=', today())
+                ->whereDate('appointment_date', '>=', today('Asia/Manila')->toDateString())
                 ->exists(), 422, 'Student cannot be archived with a future approved appointment.');
 
             $pending = Appointment::where('user_id', $student->id)
                 ->where('status', 'pending')
-                ->whereDate('appointment_date', '>=', today())
+                ->whereDate('appointment_date', '>=', today('Asia/Manila')->toDateString())
                 ->lockForUpdate()
                 ->get();
 
@@ -102,6 +103,7 @@ class StudentController extends Controller
                     'message' => 'Your appointment was cancelled because your student account was archived: ' . $data['reason'],
                     'data' => ['appointment_id' => $appointment->id],
                 ]);
+                app(\App\Services\StudentAppointmentMail::class)->afterCommit($appointment);
             }
 
             $student->update([

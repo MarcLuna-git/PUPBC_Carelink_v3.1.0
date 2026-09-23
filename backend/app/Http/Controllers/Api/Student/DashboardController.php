@@ -16,7 +16,7 @@ class DashboardController extends Controller
             ->selectRaw("
                 COUNT(CASE WHEN appointment_date >= ? AND status = 'approved' THEN 1 END) AS upcoming_appointments,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_appointments
-            ", [now()])
+            ", [now('Asia/Manila')->toDateString()])
             ->first();
         
         return response()->json([
@@ -33,7 +33,7 @@ class DashboardController extends Controller
     public function upcomingAppointments()
     {
         $appointments = Appointment::where('user_id', auth()->id())
-            ->where('appointment_date', '>=', now())
+            ->whereDate('appointment_date', '>=', now('Asia/Manila')->toDateString())
             ->where('status', 'approved')
             ->orderBy('appointment_date')
             ->limit(5)

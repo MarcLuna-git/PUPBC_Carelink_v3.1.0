@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Nurse;
 
 use App\Http\Controllers\Controller;
+use App\Support\DatabaseSearch;
 use App\Models\Medicine;
 use App\Models\MedicineBatch;
 use App\Models\MedicineStockMovement;
@@ -19,9 +20,9 @@ class MedicineController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('generic_name', 'like', "%{$request->search}%")
-                  ->orWhere('category', 'like', "%{$request->search}%");
+                $q->where('name', DatabaseSearch::like($q), "%{$request->search}%")
+                  ->orWhere('generic_name', DatabaseSearch::like($q), "%{$request->search}%")
+                  ->orWhere('category', DatabaseSearch::like($q), "%{$request->search}%");
             });
         }
 
@@ -88,7 +89,9 @@ class MedicineController extends Controller
     public function batches($id)
     {
         Medicine::findOrFail($id);
-        return response()->json(['success' => true, 'data' => MedicineBatch::where('medicine_id', $id)->orderBy('expiry_date')->get()]);
+        return response()->json(['success' => true, 'data' => MedicineBatch::where('medicine_id', $id)
+            ->orderByRaw('CASE WHEN expiry_date IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('expiry_date')->get()]);
     }
 
     public function movements(Request $request, $id)

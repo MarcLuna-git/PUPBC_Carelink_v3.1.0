@@ -261,6 +261,8 @@ class AppointmentController extends Controller
                 'data' => [
                     'appointment_id' => $appointment->id,
                     'reference_number' => $appointment->reference_number,
+                    'appointment_date' => $appointment->appointment_date->toDateString(),
+                    'time_slot' => $appointment->time_slot,
                     'status' => 'pending',
                 ],
                 'read' => false,
@@ -609,6 +611,8 @@ class AppointmentController extends Controller
                     'data' => [
                         'appointment_id' => $appointment->id,
                         'reference_number' => $appointment->reference_number,
+                        'appointment_date' => $appointment->appointment_date->toDateString(),
+                        'time_slot' => $appointment->time_slot,
                         'status' => 'cancelled',
                     ],
                     'read' => false,

@@ -13,12 +13,39 @@ class StudentAppointmentStatusMail extends Mailable
     public $appointmentDate;
     public $timeSlot;
     public $status;
+    public $event;
+    public $reason;
+    public $title;
+    public $eventMessage;
 
-    public function __construct(Appointment $appointment)
+    public function __construct(Appointment $appointment, ?string $event = null)
     {
-        if (!in_array($appointment->status, ['pending', 'cancelled'], true)) {
-            throw new InvalidArgumentException('Unsupported Student appointment email status.');
+        $this->event = $event ?? $appointment->status;
+        $titles = [
+            'pending' => 'Appointment request received',
+            'approved' => 'Appointment approved',
+            'rejected' => 'Appointment rejected',
+            'cancelled' => 'Appointment cancelled',
+            'rescheduled' => 'Appointment rescheduled',
+            'expired' => 'Appointment expired',
+        ];
+        if (!isset($titles[$this->event])) {
+            throw new InvalidArgumentException('Unsupported appointment email event.');
         }
+        $this->title = $titles[$this->event];
+        $this->reason = $this->event === 'rejected' ? $appointment->rejection_reason
+            : ($this->event === 'cancelled' ? $appointment->cancellation_reason : null);
+        $messages = [
+            'pending' => 'Your appointment request is pending clinic approval. This email does not confirm approval.',
+            'approved' => 'Your appointment has been approved by the clinic.',
+            'rejected' => 'Your appointment request has been rejected by the clinic.',
+            'cancelled' => $appointment->cancelled_by
+                ? 'Your appointment has been cancelled by the clinic.'
+                : 'Your appointment has been cancelled at your request.',
+            'rescheduled' => 'The clinic has rescheduled your appointment. Please review the updated schedule below.',
+            'expired' => 'Your pending appointment expired because its appointment date has passed.',
+        ];
+        $this->eventMessage = $messages[$this->event];
 
         $this->appointmentId = $appointment->id;
         $this->referenceNumber = $appointment->reference_number;
@@ -29,9 +56,7 @@ class StudentAppointmentStatusMail extends Mailable
 
     public function build()
     {
-        return $this->subject($this->status === 'pending'
-            ? 'Appointment request received - PUPBC CareLink'
-            : 'Appointment cancelled - PUPBC CareLink')
+        return $this->subject($this->title . ' - PUPBC CareLink')
             ->view('emails.student-appointment-status');
     }
 }

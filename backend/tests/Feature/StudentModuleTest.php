@@ -28,7 +28,7 @@ class StudentModuleTest extends TestCase
             'password' => Hash::make('TestPassword123!'),
             'birthday' => '2002-05-15',
             'role' => 'student',
-            'status' => 'inactive',
+            'status' => null,
         ], $attributes));
     }
 
@@ -98,18 +98,49 @@ class StudentModuleTest extends TestCase
         $this->assertSame(['R-002'], array_values(array_unique(array_column(array_column($rows, 'queue'), 'queue_number'))));
     }
 
-    public function test_student_login_does_not_depend_on_legacy_status(): void
+    public function test_student_and_nurse_login_accept_normal_and_pending_accounts(): void
     {
-        foreach (['inactive', 'archived', 'pending'] as $status) {
-            $student = $this->student(['status' => $status]);
-            $result = app(AuthService::class)->login([
-                'student_id' => $student->student_id,
-                'birthday' => '2002-05-15',
-                'password' => 'TestPassword123!',
-            ]);
-
-            $this->assertSame($student->id, $result['user']->id);
+        foreach (['student', 'nurse'] as $role) {
+            foreach ([null, 'pending'] as $status) {
+                $user = $this->student(['status' => $status, 'role' => $role]);
+                $result = $this->login($user);
+                $this->assertSame($user->id, $result['user']->id);
+                $this->assertSame($role, $result['role']);
+                $this->assertNotEmpty($result['token']);
+            }
         }
+    }
+
+    /** @dataProvider restrictedAccounts */
+    public function test_student_and_nurse_login_reject_restricted_accounts(string $role, string $status): void
+    {
+        $user = $this->student(['status' => $status, 'role' => $role]);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid credentials.');
+        $this->login($user);
+    }
+
+    public static function restrictedAccounts(): array
+    {
+        return [
+            'inactive student' => ['student', 'inactive'],
+            'archived student' => ['student', 'archived'],
+            'inactive nurse' => ['nurse', 'inactive'],
+            'archived nurse' => ['nurse', 'archived'],
+        ];
+    }
+
+    private function login(User $user): array
+    {
+        if ($user->role === 'nurse') {
+            return app(AuthService::class)->nurseLogin($user->email, 'TestPassword123!');
+        }
+
+        return app(AuthService::class)->login([
+            'student_id' => $user->student_id,
+            'birthday' => '2002-05-15',
+            'password' => 'TestPassword123!',
+        ]);
     }
 
     public function test_qr_hash_is_returned_only_for_an_approved_appointment_today(): void

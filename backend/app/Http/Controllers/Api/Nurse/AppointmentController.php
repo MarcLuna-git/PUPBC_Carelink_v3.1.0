@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api\Nurse;
 
 use App\Http\Controllers\Controller;
+use App\Support\DatabaseSearch;
 use App\Models\Appointment;
-use App\Models\Notification;
+use App\Services\AppointmentEventNotification;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,9 +21,9 @@ class AppointmentController extends Controller
             ->when($request->date, fn($q) => $q->whereDate('appointment_date', $request->date))
             ->when($request->search, function($q) use ($request) {
                 $q->whereHas('user', fn($q) => 
-                    $q->where('first_name', 'like', "%{$request->search}%")
-                      ->orWhere('last_name', 'like', "%{$request->search}%")
-                      ->orWhere('student_id', 'like', "%{$request->search}%")
+                    $q->where('first_name', DatabaseSearch::like($q), "%{$request->search}%")
+                      ->orWhere('last_name', DatabaseSearch::like($q), "%{$request->search}%")
+                      ->orWhere('student_id', DatabaseSearch::like($q), "%{$request->search}%")
                 );
             })
             ->orderBy('appointment_date', 'desc');
@@ -65,13 +66,7 @@ class AppointmentController extends Controller
                 'cancelled_at' => now(),
             ]);
 
-            Notification::create([
-                'user_id' => $appointment->user_id,
-                'type' => 'appointment_cancelled',
-                'title' => 'Appointment Cancelled',
-                'message' => 'Your appointment was cancelled: ' . $data['reason'],
-                'data' => ['appointment_id' => $appointment->id],
-            ]);
+            app(AppointmentEventNotification::class)->send($appointment);
 
             AuditLog::create([
                 'user_id' => auth()->id(),
@@ -93,27 +88,31 @@ class AppointmentController extends Controller
             $appointment = Appointment::findOrFail($id);
             abort_unless($appointment->status === 'pending', 422, 'Only pending appointments can be approved or rejected.');
             $appointment->update(['status' => $status, 'approved_by' => $status === 'approved' ? auth()->id() : null, 'approved_at' => $status === 'approved' ? now() : null, 'rejection_reason' => $reason]);
-            Notification::create(['user_id' => $appointment->user_id, 'type' => 'appointment_' . $status, 'title' => 'Appointment ' . ucfirst($status), 'message' => 'Your appointment is ' . $status . ($reason ? ': ' . $reason : '.')]);
-            return response()->json(['success' => true, 'message' => 'Appointment ' . $status]);
+            app(AppointmentEventNotification::class)->send($appointment);
+            return response()->json(['success' => true, 'message' => 'Appointment ' . $status, 'data' => $appointment]);
         }, 3);
         Cache::forget('nurse_dashboard_stats');
         return $result;
     }
     public function reschedule(Request $request, $id)
     {
-        $data = $request->validate(['appointment_date' => 'required|date_format:Y-m-d|after_or_equal:today', 'time_slot' => 'required|string|in:8:00 AM,8:30 AM,9:00 AM,9:30 AM,10:00 AM,10:30 AM,11:00 AM,11:30 AM,1:00 PM,1:30 PM,2:00 PM,2:30 PM,3:00 PM,3:30 PM,4:00 PM,4:30 PM']);
+        $data = $request->validate(['appointment_date' => 'required|date_format:Y-m-d|after_or_equal:' . today('Asia/Manila')->toDateString(), 'time_slot' => 'required|string|in:8:00 AM,8:30 AM,9:00 AM,9:30 AM,10:00 AM,10:30 AM,11:00 AM,11:30 AM,1:00 PM,1:30 PM,2:00 PM,2:30 PM,3:00 PM,3:30 PM,4:00 PM,4:30 PM']);
         return DB::transaction(function () use ($data, $id) {
             \App\Services\ClinicQueue::lock();
             $appointment = Appointment::findOrFail($id);
             abort_unless(in_array($appointment->status, ['pending', 'approved'], true), 422, 'This appointment cannot be rescheduled.');
             abort_if(\App\Models\AppointmentCheckin::where('appointment_id', $id)->exists(), 409, 'A checked-in visit cannot be rescheduled.');
-            abort_if(Carbon::parse($data['appointment_date'] . ' ' . $data['time_slot'])->isPast(), 422, 'Select a future appointment time.');
+            abort_if(\App\Models\AppointmentSlot::isSunday($data['appointment_date']), 422, 'The clinic is closed on Sundays.');
+            abort_if(Carbon::parse($data['appointment_date'] . ' ' . $data['time_slot'], 'Asia/Manila')->isPast(), 422, 'Select a future appointment time.');
             $others = Appointment::where('id', '!=', $id)->whereDate('appointment_date', $data['appointment_date'])->whereIn('status', ['pending', 'approved']);
             abort_if((clone $others)->where('user_id', $appointment->user_id)->exists(), 422, 'Student already has an appointment that day.');
             abort_if((clone $others)->where('time_slot', $data['time_slot'])->count() >= 10, 422, 'Time slot is full.');
             $appointment->update($data);
+            if ($appointment->wasChanged(['appointment_date', 'time_slot'])) {
+                app(AppointmentEventNotification::class)->send($appointment, 'rescheduled');
+            }
             Cache::forget('nurse_dashboard_stats');
-            return response()->json(['success' => true, 'message' => 'Appointment rescheduled.']);
+            return response()->json(['success' => true, 'message' => 'Appointment rescheduled.', 'data' => $appointment]);
         }, 3);
     }
     public function complete($id)

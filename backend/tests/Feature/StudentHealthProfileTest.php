@@ -20,7 +20,7 @@ class StudentHealthProfileTest extends TestCase
             'first_name' => 'Student', 'last_name' => 'Test',
             'email' => Str::uuid() . '@example.test',
             'password' => Hash::make('TestPassword123!'),
-            'birthday' => '2002-05-15', 'role' => 'student', 'status' => 'active',
+            'birthday' => '2002-05-15', 'role' => 'student', 'status' => null,
         ]);
     }
 

@@ -11,11 +11,11 @@ use Throwable;
 
 class StudentAppointmentMail
 {
-    public function afterCommit(Appointment $appointment): void
+    public function afterCommit(Appointment $appointment, ?string $event = null): void
     {
         // Capture the recipient and event details before a later status change.
-        $recipient = $appointment->user->email;
-        $mail = new StudentAppointmentStatusMail($appointment);
+        $recipient = $appointment->user()->withTrashed()->firstOrFail()->email;
+        $mail = new StudentAppointmentStatusMail($appointment, $event);
 
         DB::afterCommit(function () use ($recipient, $mail) {
             try {
@@ -26,6 +26,7 @@ class StudentAppointmentMail
                 Log::error('Student appointment email delivery failed.', [
                     'appointment_id' => $mail->appointmentId,
                     'status' => $mail->status,
+                    'event' => $mail->event,
                     'exception_class' => get_class($exception),
                 ]);
             }

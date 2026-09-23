@@ -65,7 +65,7 @@ const NurseDashboard = () => {
         const data = response.data.data;
         const appointments = Array.isArray(data) ? data : (data?.data || []);
         const formatted = appointments.slice(0, 5).map(a => ({
-          time: formatTime(a.appointment_date || a.appointment_time),
+          time: a.time_slot || formatTime(a.appointment_time),
           name: (a.user?.first_name || a.student?.first_name || '') + ' ' + (a.user?.last_name || a.student?.last_name || ''),
           concern: a.reason || a.concern || 'Appointment',
           status: a.status || 'pending',

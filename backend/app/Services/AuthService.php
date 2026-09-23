@@ -247,7 +247,8 @@ class AuthService
 
         if (
             !$user ||
-            $user->role !== 'student'
+            $user->role !== 'student' ||
+            in_array($user->status, ['inactive', 'archived'], true)
         ) {
             throw new \Exception(
                 'Invalid credentials.'

@@ -25,7 +25,10 @@ return new class extends Migration
         if ($driver === 'mysql') {
             DB::statement("ALTER TABLE appointments MODIFY status ENUM('pending','approved','rejected','completed','cancelled','expired') NOT NULL DEFAULT 'pending'");
         } elseif ($driver === 'pgsql') {
-            DB::statement('ALTER TABLE appointments ALTER COLUMN status TYPE VARCHAR(20) USING status::text');
+            DB::statement("ALTER TABLE appointments
+                DROP CONSTRAINT appointments_status_check,
+                ADD CONSTRAINT appointments_status_check
+                CHECK (status IN ('pending','approved','rejected','completed','cancelled','expired'))");
         }
     }
 
@@ -35,6 +38,12 @@ return new class extends Migration
         if ($driver === 'mysql') {
             DB::table('appointments')->where('status', 'expired')->update(['status' => 'rejected']);
             DB::statement("ALTER TABLE appointments MODIFY status ENUM('pending','approved','rejected','completed','cancelled') NOT NULL DEFAULT 'pending'");
+        } elseif ($driver === 'pgsql') {
+            DB::table('appointments')->where('status', 'expired')->update(['status' => 'rejected']);
+            DB::statement("ALTER TABLE appointments
+                DROP CONSTRAINT appointments_status_check,
+                ADD CONSTRAINT appointments_status_check
+                CHECK (status IN ('pending','approved','rejected','completed','cancelled'))");
         }
 
         Schema::table('appointments', function (Blueprint $table) {

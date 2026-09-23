@@ -52,7 +52,7 @@ class StudentAppointmentNotificationTest extends TestCase
             'student_id' => 'NOTICE-' . Str::random(10),
             'first_name' => 'Notification', 'last_name' => 'Test',
             'email' => Str::uuid() . '@example.test', 'password' => 'unused',
-            'birthday' => '2002-05-15', 'role' => 'student', 'status' => 'active',
+            'birthday' => '2002-05-15', 'role' => 'student', 'status' => null,
         ]);
         $this->studentIds[] = $student->id;
         if ($complete) {

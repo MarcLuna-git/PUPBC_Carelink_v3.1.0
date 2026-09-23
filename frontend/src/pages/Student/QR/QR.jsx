@@ -1,4 +1,6 @@
 import api from '../../../services/api';
+import { clinicDate as getManilaDateString, groupAppointments, formatAppointmentDate } from '../../../utils/appointmentDate';
+const formatDate = (value) => formatAppointmentDate(value, { month: 'long' });
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -25,67 +27,6 @@ const Skeleton = ({ className = '' }) => (
     className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl ${className}`}
   />
 );
-
-const getManilaDateString = () => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date());
-
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value])
-  );
-
-  return `${values.year}-${values.month}-${values.day}`;
-};
-
-const normalizeDateValue = (value) => {
-  if (!value) {
-    return '';
-  }
-
-  if (typeof value === 'string') {
-    const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-
-    if (match) {
-      return match[1];
-    }
-  }
-
-  return '';
-};
-
-const formatDate = (value) => {
-  const dateString = normalizeDateValue(value);
-
-  if (!dateString) {
-    return 'N/A';
-  }
-
-  const [year, month, day] = dateString
-    .split('-')
-    .map(Number);
-
-  const date = new Date(
-    Date.UTC(
-      year,
-      month - 1,
-      day,
-      12,
-      0,
-      0
-    )
-  );
-
-  return new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'Asia/Manila',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date);
-};
 
 const queueStatusLabel = (status) => {
   switch (status) {
@@ -145,20 +86,9 @@ const QR = () => {
   const [qrDataUrl, setQrDataUrl] =
     useState('');
 
-  const today = useMemo(
-    () => getManilaDateString(),
-    []
-  );
-
+  const today = getManilaDateString();
   const todayAppointment = useMemo(
-    () =>
-      appointments.find(
-        (appointment) =>
-          appointment.status === 'approved' &&
-          normalizeDateValue(
-            appointment.appointment_date
-          ) === today
-      ) || null,
+    () => groupAppointments(appointments).today[0] || null,
     [appointments, today]
   );
 

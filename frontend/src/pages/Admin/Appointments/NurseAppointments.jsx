@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, CheckCircle, XCircle, Search, User, Loader2, X, FileText, Stethoscope, Info, Filter, Users, RefreshCw } from 'lucide-react';
 import api from '../../../services/api';
+import { formatAppointmentDate, groupAppointments } from '../../../utils/appointmentDate';
 
 const NurseAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -125,19 +126,7 @@ const NurseAppointments = () => {
     setTimeout(() => setMessage(''), 3000);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (value) => formatAppointmentDate(value, { weekday: 'short' });
 
   const filtered = Array.isArray(appointments) ? appointments : [];
 
@@ -162,7 +151,7 @@ const NurseAppointments = () => {
   const counts = {
     all: appointments.length,
     pending: appointments.filter(a => a.status === 'pending').length,
-    approved: appointments.filter(a => a.status === 'approved').length,
+    approved: groupAppointments(appointments).today.length,
     completed: appointments.filter(a => a.status === 'completed').length,
   };
 

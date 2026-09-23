@@ -16,7 +16,7 @@ class CheckinController extends Controller
     public function todayCheckins() { return response()->json(['success' => true, 'data' => ClinicQueue::ordered()->get()]); }
     public function getAppointment($reference)
     {
-        $appointment = Appointment::where('reference_number', $reference)->where('status', 'approved')->whereDate('appointment_date', today())->firstOrFail();
+        $appointment = Appointment::where('reference_number', $reference)->where('status', 'approved')->whereDate('appointment_date', today('Asia/Manila')->toDateString())->firstOrFail();
         return response()->json(['success' => true, 'data' => ['service' => $appointment->service, 'appointment_date' => $appointment->appointment_date->toDateString(), 'time_slot' => $appointment->time_slot]]);
     }
 }
