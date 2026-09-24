@@ -32,20 +32,19 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 
 COPY . .
 
-RUN mkdir -p storage/framework/{sessions,views,cache,data} \
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data \
     && mkdir -p storage/logs \
     && mkdir -p bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Build default lang ang .env.example; runtime env ang override.
-RUN cp .env.example .env 2>/dev/null || true
-
-RUN php artisan key:generate 2>/dev/null || true
-RUN php artisan package:discover --ansi 2>/dev/null || true
+# Discover packages without a local .env or build-time secrets.
+RUN php artisan package:discover --ansi
 
 RUN php artisan storage:link 2>/dev/null || true
 
-# Render ang nagse-set ng PORT.
-EXPOSE $PORT
+# Railway supplies PORT and all application secrets at runtime.
+EXPOSE 8080
 
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"]
+# Run migrations separately as a controlled release step, not on every restart.
+# --no-reload preserves runtime environment variables in Laravel's server child.
+CMD ["sh", "-c", "php artisan config:clear && exec php artisan serve --no-reload --host=0.0.0.0 --port=${PORT:-8080}"]
