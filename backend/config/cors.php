@@ -10,6 +10,7 @@ return [
 
     'allowed_methods' => [
         'GET',
+        'HEAD',
         'POST',
         'PUT',
         'PATCH',
@@ -25,6 +26,8 @@ return [
 
         env('FRONTEND_URL', 'http://localhost:5173'),
 
+        'https://pupbc-carelink-testing.vercel.app',
+
         'https://pup-carelink-testing-frontend.onrender.com',
         'https://pup-carelink-testing-backend.onrender.com',
         'https://carelink-frontend.onrender.com',
@@ -34,7 +37,7 @@ return [
     'allowed_origins_patterns' => [
 
         // 192.168.0.0/16
-        '#^http://192\.168\.\d{0,110}\.\d{0,110}:5173$#i',
+        '#^http://192\.168\.\d{1,3}\.\d{1,3}:5173$#i',
 
         // 10.0.0.0/8
         '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$#i',
@@ -47,7 +50,6 @@ return [
         '#^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$#i',
         '#^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:3000$#i',
 
-        '#^https://[a-z0-9-]+\.onrender\.com$#i',
     ],
 
     'allowed_headers' => [
