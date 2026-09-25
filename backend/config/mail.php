@@ -11,13 +11,6 @@ return [
 
 
     'mailers' => [
-        'resend' => [
-            'transport' => 'resend',
-            'key' => env('RESEND_API_KEY'),
-            'from_email' => env('RESEND_FROM_EMAIL'),
-            'from_name' => env('RESEND_FROM_NAME', 'PUPBC CareLink'),
-            'verified_domain' => env('RESEND_VERIFIED_DOMAIN'),
-        ],
         'smtp' => [
             'transport' => 'smtp',
             'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
@@ -25,7 +18,8 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'ssl'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Mas maikli sa 20s timeout ng frontend para hindi mag-error ang UI habang naghihintay sa SMTP.
+            'timeout' => (int) env('MAIL_TIMEOUT', 10),
             'auth_mode' => null,
         ],
 

@@ -132,7 +132,7 @@ class MedicineController extends Controller
         $data = $request->validate([
             'movement_type' => 'required|string|in:dispensed,wasted,expired,adjustment',
             'quantity' => 'required|integer|min:1',
-            'batch_id' => 'nullable|uuid|exists:medicine_batches,id',
+            'batch_id' => 'bail|nullable|uuid|exists:medicine_batches,id',
             'reason' => 'required|string|max:500',
         ]);
 

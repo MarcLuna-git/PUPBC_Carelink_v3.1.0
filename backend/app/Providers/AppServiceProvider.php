@@ -37,10 +37,6 @@ class AppServiceProvider extends ServiceProvider
             }
         );
 
-        $this->app->make('mail.manager')->extend('resend', function (array $config) {
-            return new \App\Mail\ResendTransport((string) ($config['key'] ?? ''));
-        });
-
         // Iwas sa MySQL/MariaDB index-length error.
         Schema::defaultStringLength(191);
     }

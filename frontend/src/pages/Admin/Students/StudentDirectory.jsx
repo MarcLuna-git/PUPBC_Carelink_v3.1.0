@@ -13,7 +13,7 @@ export function Avatar({ student }) {
   </span>;
 }
 export function StatusBadge({ status }) {
-  const colors = { approved: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', completed: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', inactive: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', pending: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', archived: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
+  const colors = { approved: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', completed: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', inactive: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', pending: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', archived: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', rejected: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', expired: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
   const label = status || 'normal';
   return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium capitalize ${colors[status] || 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>{label.replaceAll('_', ' ')}</span>;
 }

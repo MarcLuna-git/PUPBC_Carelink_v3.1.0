@@ -144,7 +144,7 @@ class StudentController extends Controller
 
     public function healthProfile($id)
     {
-        $student = User::where('role', 'student')->with('healthProfile')->findOrFail($id);
+        $student = User::withTrashed()->where('role', 'student')->with('healthProfile')->findOrFail($id);
         return response()->json(['success' => true, 'data' => $student->healthProfile]);
     }
 
@@ -204,7 +204,7 @@ class StudentController extends Controller
 
     public function clinicHistory($id)
     {
-        User::where('role', 'student')->findOrFail($id);
+        User::withTrashed()->where('role', 'student')->findOrFail($id);
         return response()->json(['success' => true, 'data' => app(\App\Services\ClinicHistory::class)->forStudent($id)]);
     }
 }

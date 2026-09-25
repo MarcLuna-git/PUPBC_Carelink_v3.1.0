@@ -57,6 +57,14 @@ class AuthService
 
     public function requestRegistrationOtp(array $data): array
     {
+        // Expired pending rows must not block a corrected re-registration.
+        PendingRegistration::where('expires_at', '<', now())
+            ->where(function ($query) use ($data) {
+                $query->where('email', $data['email'])
+                    ->orWhere('student_id', $data['student_id']);
+            })
+            ->delete();
+
         if (
             User::where('email', $data['email'])
                 ->orWhere('student_id', $data['student_id'])
@@ -309,7 +317,7 @@ class AuthService
 
         if (
             !$user ||
-            in_array($user->status, ['inactive', 'archived'], true) ||
+            $user->status !== null ||
             !$this->verifyPassword(
                 $password,
                 $user->password

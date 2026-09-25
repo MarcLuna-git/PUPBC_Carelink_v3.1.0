@@ -34,9 +34,9 @@ class ConsultationController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|uuid|exists:users,id',
-            'appointment_id' => 'required|uuid|exists:appointments,id',
-            'appointment_checkin_id' => 'required|uuid|exists:appointment_checkins,id',
+            'user_id' => 'bail|required|uuid|exists:users,id',
+            'appointment_id' => 'bail|required|uuid|exists:appointments,id',
+            'appointment_checkin_id' => 'bail|required|uuid|exists:appointment_checkins,id',
             'chief_complaint' => 'required|string|max:2000',
             'vital_signs' => 'nullable|array:bp,hr,rr,temp,o2_sat',
             'vital_signs.*' => 'nullable|string|max:50',

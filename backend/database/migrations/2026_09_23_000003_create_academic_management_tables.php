@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -193,7 +192,7 @@ return new class extends Migration
 
         if ($connection->getDriverName() === 'mysql') {
             return $connection->select(
-                "SELECT index_name, column_name, seq_in_index AS ordinal_position,
+                "SELECT index_name AS index_name, column_name AS column_name, seq_in_index AS ordinal_position,
                         CASE WHEN index_name = 'PRIMARY' THEN 1 ELSE 0 END AS is_primary
                  FROM information_schema.statistics
                  WHERE table_schema = DATABASE() AND table_name = ? AND non_unique = 0

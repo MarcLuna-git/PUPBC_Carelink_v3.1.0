@@ -80,8 +80,8 @@ class CourseManagementController extends Controller
     public function storeSection(Request $request)
     {
         $data = $request->validate([
-            'academic_period_id' => 'required|uuid|exists:academic_periods,id',
-            'course_id' => 'required|uuid|exists:courses,id',
+            'academic_period_id' => 'bail|required|uuid|exists:academic_periods,id',
+            'course_id' => 'bail|required|uuid|exists:courses,id',
             'year_level' => 'required|string|max:30',
             'section_code' => 'required|string|max:30',
             'is_active' => 'sometimes|boolean',
@@ -93,8 +93,8 @@ class CourseManagementController extends Controller
     {
         $section = CourseSection::findOrFail($id);
         $section->update($request->validate([
-            'academic_period_id' => 'sometimes|uuid|exists:academic_periods,id',
-            'course_id' => 'sometimes|uuid|exists:courses,id',
+            'academic_period_id' => 'bail|sometimes|uuid|exists:academic_periods,id',
+            'course_id' => 'bail|sometimes|uuid|exists:courses,id',
             'year_level' => 'sometimes|string|max:30',
             'section_code' => 'sometimes|string|max:30',
             'is_active' => 'sometimes|boolean',
@@ -105,8 +105,8 @@ class CourseManagementController extends Controller
     public function enroll(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|uuid|exists:users,id',
-            'course_section_id' => 'required|uuid|exists:course_sections,id',
+            'user_id' => 'bail|required|uuid|exists:users,id',
+            'course_section_id' => 'bail|required|uuid|exists:course_sections,id',
             'status' => 'sometimes|string|in:enrolled,completed,withdrawn',
             'enrolled_at' => 'nullable|date',
         ]);

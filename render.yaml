@@ -67,6 +67,11 @@ services:
         value: pupbccarelink@gmail.com
       - key: MAIL_FROM_NAME
         value: "PUPBC CareLink"
+      - key: MAIL_TIMEOUT
+        value: "10"
+      # Staging switch: kapag true, lahat ng email ay napupunta sa test recipient.
+      - key: EMAIL_TEST_MODE
+        value: "false"
 
       - key: CACHE_DRIVER
         value: file

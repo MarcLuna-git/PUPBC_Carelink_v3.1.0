@@ -265,6 +265,7 @@ const Appointments = () => {
     completed: 2,
     cancelled: 3,
     rejected: 4,
+    expired: 5,
   };
 
   const orderedAppointments = [...appointments].sort((a, b) => {
@@ -305,7 +306,7 @@ const Appointments = () => {
       ? orderedAppointments
       : filter === 'past'
         ? orderedAppointments.filter((appointment) =>
-            ['completed', 'cancelled', 'rejected'].includes(
+            ['completed', 'cancelled', 'rejected', 'expired'].includes(
               appointment.status
             )
           )
@@ -341,6 +342,12 @@ const Appointments = () => {
     rejected: {
       bg: 'bg-red-50 dark:bg-red-900/20',
       text: 'text-red-700 dark:text-red-400',
+      icon: XCircle,
+    },
+
+    expired: {
+      bg: 'bg-gray-100 dark:bg-gray-700/40',
+      text: 'text-gray-600 dark:text-gray-300',
       icon: XCircle,
     },
   };
