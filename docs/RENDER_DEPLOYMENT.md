@@ -16,9 +16,9 @@ Lahat ng config ay nasa [`render.yaml`](../render.yaml).
 1. **Palitan ang database password** (na-leak ito sa lumang git history):
    Project Settings → Database → **Reset database password**. I-save ang bagong password.
 2. Pindutin ang **Connect** (itaas ng dashboard) → **Session pooler**. I-check:
-   - Host: `aws-0-ap-northeast-1.pooler.supabase.com` (kung iba, palitan ang `DB_HOST` sa `render.yaml`)
+   - Host: `aws-0-ap-southeast-2.pooler.supabase.com` (kung iba, palitan ang `DB_HOST` sa `render.yaml`)
    - Port: `5432`
-   - User: `postgres.rbrhhuisskfdienbkqao`
+   - User: `postgres.nwfltsdypjmqbsnuoccy`
 3. **Table Editor** → may `users` at `migrations` table na ba? May row na ba na `role = nurse`?
    - Oo → hindi na kailangang mag-seed (laktawan ang Step 6).
    - Wala → gagawin ng deploy ang tables; mag-seed sa Step 6.
@@ -67,7 +67,7 @@ Sa susunod na update: mag-commit sa `deploy` branch at `git push deploy deploy:m
 | Key | Value |
 |---|---|
 | `APP_KEY` | output ng Step 3 |
-| `DB_USERNAME` | `postgres.rbrhhuisskfdienbkqao` |
+| `DB_USERNAME` | `postgres.nwfltsdypjmqbsnuoccy` |
 | `DB_PASSWORD` | bagong Supabase password (Step 1) |
 | `MAIL_USERNAME` | Brevo SMTP login |
 | `MAIL_PASSWORD` | Brevo SMTP key |
@@ -118,7 +118,7 @@ Gumagawa ang seeder ng:
 - **Docker backend**: walang native PHP runtime ang Render.
 - **`--no-reload` sa `php artisan serve`**: kung wala ito, binabasa ng Laravel 8 serve ang `.env` imbes na ang Render env vars.
 - **Port 5432 (session pooler)**: iwas sa prepared-statement errors ng transaction pooler (6543) sa Laravel/PDO.
-- **Singapore**: pinakamalapit na Render region sa Supabase (Tokyo).
+- **Singapore**: pinakamalapit na Render region sa Supabase (Sydney); walang Render region sa Australia.
 - **Static site frontend**: libre, hindi natutulog, nasa CDN.
 - **`migrate --force` sa bawat boot**: walang pre-deploy step ang Render Free, at kailangang sabay ang bagong code at schema (hal. `users.status` na `active` → `NULL`). **Babala:** kung may teammate na gumagamit ng parehong Supabase gamit ang lumang code, hindi na siya makaka-login bilang nurse pagkatapos ng migration. I-update muna ang code nila.
 - **Auto-expire ng appointments**: walang cron sa Render Free, kaya ang unang API request ng araw ang nag-e-expire ng mga lumang pending appointment (`ExpireStaleAppointments` middleware).
