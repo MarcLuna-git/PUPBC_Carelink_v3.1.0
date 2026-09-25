@@ -2,7 +2,7 @@ import authService from '../services/authService';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Calendar, Users, FileText, Bell, LogOut, QrCode, Settings, Menu, X, Stethoscope, Activity, Sun, Moon, Pill, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Bell, LogOut, QrCode, Settings, Menu, X, Stethoscope, Activity, Sun, Moon, Pill, Megaphone, BookOpen } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -56,6 +56,7 @@ const AdminLayout = ({ children }) => {
     { path: '/nurse/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/nurse/appointments', icon: Calendar, label: 'Appointments' },
     { path: '/nurse/students', icon: Users, label: 'Students' },
+    { path: '/nurse/academic', icon: BookOpen, label: 'Courses' },
     { path: '/nurse/consultation', icon: Stethoscope, label: 'Consultation' },
     { path: '/nurse/medicines', icon: Pill, label: 'Medicines' },
     { path: '/nurse/announcements', icon: Megaphone, label: 'Announcements' },

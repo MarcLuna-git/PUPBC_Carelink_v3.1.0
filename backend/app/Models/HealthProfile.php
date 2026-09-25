@@ -269,11 +269,6 @@ class HealthProfile extends Model
                 'surgery_diagnosis',
                 'covid_diagnosis',
                 'occupation',
-                'marital_status',
-                'tobacco_use',
-                'tobacco_amount',
-                'tobacco_duration',
-                'alcohol_use',
             ] as $field
         ) {
             $rules[$field] = [
@@ -281,6 +276,10 @@ class HealthProfile extends Model
                 'string',
                 'max:191',
             ];
+        }
+
+        foreach (['marital_status' => 50, 'tobacco_use' => 20, 'tobacco_amount' => 100, 'tobacco_duration' => 100, 'alcohol_use' => 20] as $field => $limit) {
+            $rules[$field] = ['nullable', 'string', 'max:' . $limit];
         }
 
         foreach (

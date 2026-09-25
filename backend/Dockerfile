@@ -32,22 +32,20 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 
 COPY . .
 
-RUN mkdir -p storage/framework/{sessions,views,cache,data} \
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data \
     && mkdir -p storage/logs \
     && mkdir -p bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Build default lang ang .env.example; runtime env ang override.
-RUN cp .env.example .env 2>/dev/null || true
-
-RUN php artisan key:generate 2>/dev/null || true
-RUN php artisan package:discover --ansi 2>/dev/null || true
+# Discover packages without a local .env or build-time secrets.
+RUN php artisan package:discover --ansi
 
 RUN php artisan storage:link 2>/dev/null || true
 
 # Render ang nagse-set ng PORT (default 10000).
 EXPOSE 10000
 
-# --no-reload: kung wala ito, tinatanggal ng serve ang Render env vars at .env.example ang gagamitin.
+# Migrate on boot: walang pre-deploy step ang Render free, at kailangang sabay ang code at schema.
 # SEED_ON_BOOT=true: one-time seed (walang Shell sa Render free). Alisin pagkatapos.
-CMD ["sh", "-c", "php artisan migrate --force && if [ \"$SEED_ON_BOOT\" = \"true\" ]; then php artisan db:seed --force; fi && php artisan serve --no-reload --host=0.0.0.0 --port=${PORT:-10000}"]
+# --no-reload preserves runtime environment variables in Laravel's server child.
+CMD ["sh", "-c", "php artisan config:clear && php artisan migrate --force && if [ \"$SEED_ON_BOOT\" = \"true\" ]; then php artisan db:seed --force; fi && exec php artisan serve --no-reload --host=0.0.0.0 --port=${PORT:-10000}"]

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\AppointmentCheckin;
 use App\Models\AppointmentSlot;
+use App\Models\Notification;
 use App\Models\QRCode;
 use App\Services\ClinicQueue;
+use App\Services\StudentAppointmentMail;
 use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -143,13 +145,15 @@ class AppointmentController extends Controller
 
             if (
                 !$user ||
+                in_array($user->status, ['inactive', 'archived'], true) ||
                 !$user->healthProfile ||
                 !$user->healthProfile->isComplete()
             ) {
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Complete your health profile before booking.',
+                    'message' => $user && in_array($user->status, ['inactive', 'archived'], true)
+                        ? 'Your account is not eligible to book appointments.'
+                        : 'Complete your health profile before booking.',
                 ], 422);
             }
 
@@ -245,6 +249,25 @@ class AppointmentController extends Controller
                             Str::random(8)
                         ),
                 ]);
+
+            Notification::create([
+                'user_id' => $appointment->user_id,
+                'type' => 'appointment_pending',
+                'title' => 'Appointment request received',
+                'message' => 'Your appointment request for '
+                    . $appointment->appointment_date->format('M j, Y')
+                    . ' at ' . $appointment->time_slot
+                    . ' is pending clinic approval.',
+                'data' => [
+                    'appointment_id' => $appointment->id,
+                    'reference_number' => $appointment->reference_number,
+                    'appointment_date' => $appointment->appointment_date->toDateString(),
+                    'time_slot' => $appointment->time_slot,
+                    'status' => 'pending',
+                ],
+                'read' => false,
+            ]);
+            app(StudentAppointmentMail::class)->afterCommit($appointment);
 
             Cache::forget(
                 'nurse_dashboard_stats'
@@ -574,6 +597,27 @@ class AppointmentController extends Controller
                     'status' =>
                         'cancelled',
                 ]);
+
+                // Notify the student only after a valid cancellation.
+                // This notification is saved in the same transaction.
+                Notification::create([
+                    'user_id' => $appointment->user_id,
+                    'type' => 'appointment_cancelled',
+                    'title' => 'Appointment cancelled',
+                    'message' => 'Your ' . $appointment->service
+                        . ' appointment on '
+                        . $appointment->appointment_date->format('M j, Y')
+                        . ' has been cancelled.',
+                    'data' => [
+                        'appointment_id' => $appointment->id,
+                        'reference_number' => $appointment->reference_number,
+                        'appointment_date' => $appointment->appointment_date->toDateString(),
+                        'time_slot' => $appointment->time_slot,
+                        'status' => 'cancelled',
+                    ],
+                    'read' => false,
+                ]);
+                app(StudentAppointmentMail::class)->afterCommit($appointment);
 
                 Cache::forget(
                     'nurse_dashboard_stats'

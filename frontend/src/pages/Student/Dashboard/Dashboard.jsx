@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, ClipboardList, FileText, Clock, Bell, ChevronRight, Activity, Heart, QrCode, User, AlertCircle, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import api from '../../../services/api';
+import { groupAppointments, formatAppointmentDate } from '../../../utils/appointmentDate';
 
 const Skeleton = ({ className = '' }) => (
   <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl ${className}`} />
@@ -32,16 +33,21 @@ const Dashboard = () => {
   });
   const [announcements, setAnnouncements] = useState(cachedDashboard?.announcements || []);
   const [recentNotifications, setRecentNotifications] = useState(cachedDashboard?.recentNotifications || []);
+  const [appointments, setAppointments] = useState([]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { headers: { Authorization: `Bearer ${token}` } };
 
-      const [healthResult, statsResult] = await Promise.allSettled([
+      const [healthResult, statsResult, appointmentsResult] = await Promise.allSettled([
         api.get('/student/health-profile/status', headers),
         api.get('/student/dashboard-stats', headers),
+        api.get('/student/upcoming-appointments', headers),
       ]);
+      if (appointmentsResult.status === 'fulfilled' && appointmentsResult.value.data.success) {
+        setAppointments(appointmentsResult.value.data.data || []);
+      }
 
       if (healthResult.status === 'fulfilled' && healthResult.value.data.success) {
         const healthDone = healthResult.value.data.data?.completed || healthResult.value.data.data?.exists || false;
@@ -161,6 +167,7 @@ const Dashboard = () => {
     { icon: FileText, title: stats.medCerts.toString(), sub: 'Medical Certificates', color: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
     { icon: Clock, title: stats.pending.toString(), sub: 'Pending', color: 'bg-orange-50 dark:bg-orange-900/20', iconColor: 'text-orange-600 dark:text-orange-400' },
   ];
+  const appointmentGroups = groupAppointments(appointments);
 
   const quickActions = [
     { icon: Calendar, label: 'Book Appointment', path: '/student/appointments', color: 'from-maroon-800 to-maroon-900', disabled: !healthProfileDone, disabledMsg: 'Complete Health Profile first' },
@@ -295,6 +302,22 @@ const Dashboard = () => {
               </div>
             </div>
           </motion.div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[['today', "Today's Appointments"], ['upcoming', 'Upcoming Appointments']].map(([key, title]) => (
+          <section key={key} className="rounded-3xl border border-gray-100 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
+            {appointmentGroups[key].length === 0 ? (
+              <p className="mt-3 text-sm text-gray-500">No {key === 'today' ? 'appointments today' : 'upcoming appointments'}.</p>
+            ) : appointmentGroups[key].map((appointment) => (
+              <Link key={appointment.id} to="/student/appointments" className="mt-3 block text-sm text-gray-700 dark:text-gray-200">
+                <span className="font-semibold">{appointment.service}</span>
+                <span className="block">{formatAppointmentDate(appointment.appointment_date)} · {appointment.time_slot} (Philippine time)</span>
+              </Link>
+            ))}
+          </section>
         ))}
       </div>
 

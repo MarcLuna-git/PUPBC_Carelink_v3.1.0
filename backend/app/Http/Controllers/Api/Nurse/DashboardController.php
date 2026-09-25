@@ -15,7 +15,7 @@ class DashboardController extends Controller
     public function stats()
     {
         $stats = Cache::remember('nurse_dashboard_stats', 300, function() {
-            $today = Carbon::today();
+            $today = Carbon::today('Asia/Manila');
             
             return [
                 'today_appointments' => Appointment::whereDate('appointment_date', $today)->count(),
@@ -41,7 +41,7 @@ class DashboardController extends Controller
     public function appointmentsToday()
     {
         $appointments = Appointment::with('user:id,student_id,first_name,last_name')
-            ->whereDate('appointment_date', Carbon::today())
+            ->whereDate('appointment_date', Carbon::today('Asia/Manila'))
             ->orderBy('time_slot')
             ->get();
 
@@ -78,7 +78,7 @@ class DashboardController extends Controller
 
     public function dailySummary()
     {
-        $today = Carbon::today();
+        $today = Carbon::today('Asia/Manila');
         
         return response()->json([
             'success' => true,

@@ -41,6 +41,16 @@ class Medicine extends Model
         return $this->belongsTo(User::class, 'added_by');
     }
 
+    public function batches()
+    {
+        return $this->hasMany(MedicineBatch::class);
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(MedicineStockMovement::class);
+    }
+
     public function scopeLowStock($query)
     {
         return $query->whereColumn('quantity', '<=', 'minimum_stock');

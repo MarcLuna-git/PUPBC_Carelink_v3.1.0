@@ -47,6 +47,9 @@ class User extends Authenticatable implements JWTSubject
         // Retained for legacy/staff compatibility.
         // Student access no longer depends on this field.
         'status',
+        'archive_reason',
+        'archived_by',
+        'archived_at',
 
         'email_verified_at',
         'last_login_at',
@@ -62,6 +65,7 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at' => 'datetime',
         'birthday' => 'date',
         'last_login_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     public function getJWTIdentifier()

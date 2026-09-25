@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, Trash2, Calendar, Clock, CheckCircle, AlertCircle, XCircle, Info, Loader2 } from 'lucide-react';
+import { Bell, Check, Trash2, Calendar, Clock, CheckCircle, XCircle, Info, Loader2 } from 'lucide-react';
 import api from '../../../services/api';
 
 const Skeleton = ({ className = '' }) => (
@@ -8,21 +8,10 @@ const Skeleton = ({ className = '' }) => (
 );
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('carelink.student.notifications') || '[]');
-      return Array.isArray(cached) ? cached : [];
-    } catch {
-      return [];
-    }
-  });
-  const [loading, setLoading] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('carelink.student.notifications') || '[]').length === 0;
-    } catch {
-      return true;
-    }
-  });
+  // Do not cache medical/appointment notifications in localStorage: another
+  // student could sign in on the same browser and see the previous account's data.
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [filter, setFilter] = useState('all');
   const [message, setMessage] = useState('');
@@ -30,7 +19,7 @@ const Notifications = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await api.get('/notifications', { 
+      const response = await api.get('/student/notifications?limit=50', { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       if (response.data.success) {
@@ -45,7 +34,6 @@ const Notifications = () => {
           read: n.read || false,
         }));
         setNotifications(normalized);
-        localStorage.setItem('carelink.student.notifications', JSON.stringify(normalized));
       }
     } catch (err) {
       console.log('Notifications error:', err);
@@ -90,13 +78,14 @@ const Notifications = () => {
     setActionLoading(id);
     try {
       const token = localStorage.getItem('token');
-      await api.patch(`/notifications/${id}/read`, {}, { 
+      await api.patch(`/student/notifications/${id}/read`, {}, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
-      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+      setNotifications(current => current.map(n => n.id === id ? { ...n, read: true } : n));
       showMessage('Marked as read');
     } catch (err) {
-      console.log('Mark read error:', err);
+      console.error('Mark notification read error:', err);
+      showMessage('Could not update the notification. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -106,13 +95,14 @@ const Notifications = () => {
     setActionLoading('all');
     try {
       const token = localStorage.getItem('token');
-      await api.patch('/notifications/read-all', {}, { 
+      await api.patch('/student/notifications/read-all', {}, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications(current => current.map(n => ({ ...n, read: true })));
       showMessage('All marked as read');
     } catch (err) {
-      console.log('Mark all error:', err);
+      console.error('Mark all notifications error:', err);
+      showMessage('Could not mark all notifications as read.');
     } finally {
       setActionLoading(null);
     }
@@ -121,11 +111,13 @@ const Notifications = () => {
   const deleteNotification = async (id) => {
     setActionLoading(id);
     try {
-      // Local state lang ang removal; walang delete API call.
-      setNotifications(notifications.filter(n => n.id !== id));
-      showMessage('Notification removed');
+      // Persist removal on the backend; otherwise polling restores deleted items.
+      await api.delete(`/student/notifications/${id}`);
+      setNotifications(current => current.filter(n => n.id !== id));
+      showMessage('Notification deleted');
     } catch (err) {
-      console.log('Delete error:', err);
+      console.error('Delete notification error:', err);
+      showMessage('Could not delete the notification. Please try again.');
     } finally {
       setActionLoading(null);
     }

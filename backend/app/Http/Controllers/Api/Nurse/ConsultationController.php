@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Nurse;
 
 use App\Http\Controllers\Controller;
+use App\Support\DatabaseSearch;
 use App\Models\Consultation;
 use App\Models\Appointment;
 use App\Models\Notification;
@@ -20,9 +21,9 @@ class ConsultationController extends Controller
             ->when($request->date, fn($q) => $q->whereDate('created_at', $request->date))
             ->when($request->search, function($q) use ($request) {
                 $q->whereHas('user', fn($q) => 
-                    $q->where('first_name', 'like', "%{$request->search}%")
-                      ->orWhere('last_name', 'like', "%{$request->search}%")
-                      ->orWhere('student_id', 'like', "%{$request->search}%")
+                    $q->where('first_name', DatabaseSearch::like($q), "%{$request->search}%")
+                      ->orWhere('last_name', DatabaseSearch::like($q), "%{$request->search}%")
+                      ->orWhere('student_id', DatabaseSearch::like($q), "%{$request->search}%")
                 );
             })
             ->orderBy('created_at', 'desc');
@@ -81,6 +82,7 @@ class ConsultationController extends Controller
     public function update(Request $request, $id)
     {
         $consultation = Consultation::findOrFail($id);
+        abort_unless($consultation->status !== 'completed', 422, 'Completed consultations are read-only.');
         $consultation->update($request->validate([
             'chief_complaint' => 'sometimes|required|string|max:2000', 'vital_signs' => 'nullable|array:bp,hr,rr,temp,o2_sat', 'vital_signs.*' => 'nullable|string|max:50',
             'general_remarks' => 'nullable|string|max:5000', 'medical_certificate' => 'sometimes|boolean', 'medical_certificate_ref' => 'nullable|string|max:191',

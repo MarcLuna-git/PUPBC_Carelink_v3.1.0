@@ -17,6 +17,7 @@ class Handler extends ExceptionHandler
         'current_password',
         'password',
         'password_confirmation',
+        'otp',
     ];
 
     /** @return void */
@@ -27,7 +28,7 @@ class Handler extends ExceptionHandler
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'url' => request()->fullUrl(),
+                'url' => request()->url(),
                 'method' => request()->method(),
                 'user_id' => auth()->id() ?? 'guest',
                 'user_type' => auth()->check() ? (auth()->user()->role ?? 'unknown') : 'guest',
@@ -77,18 +78,20 @@ class Handler extends ExceptionHandler
                     'message' => 'Too many requests. Please try again later.',
                     'error_code' => 'RATE_LIMITED',
                     'retry_after' => $e->getHeaders()['Retry-After'] ?? 60,
-                ], 429);
+                ], 429, $e->getHeaders());
             }
         });
     }
 
     private function sanitizeInput(array $input): array
     {
-        $sensitiveFields = ['password', 'password_confirmation', 'token', 'secret', 'api_key'];
+        $sensitiveFields = ['password', 'password_confirmation', 'current_password', 'new_password', 'token', 'secret', 'api_key', 'resend_api_key', 'otp'];
         
-        foreach ($sensitiveFields as $field) {
-            if (isset($input[$field])) {
+        foreach ($input as $field => $value) {
+            if (in_array(strtolower($field), $sensitiveFields, true)) {
                 $input[$field] = '***REDACTED***';
+            } elseif (is_array($value)) {
+                $input[$field] = $this->sanitizeInput($value);
             }
         }
 

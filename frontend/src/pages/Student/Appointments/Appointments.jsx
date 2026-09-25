@@ -19,93 +19,13 @@ import {
   Users,
 } from 'lucide-react';
 import api from '../../../services/api';
+import { clinicDate as getLocalDateString, appointmentDate as normalizeDateValue, appointmentTime as parseAppointmentDateTime, isClinicSunday as isSunday, formatAppointmentDate as formatDate } from '../../../utils/appointmentDate';
 
 const Skeleton = ({ className = '' }) => (
   <div
     className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl ${className}`}
   />
 );
-
-const getLocalDateString = () => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date());
-  const get = (type) => parts.find((part) => part.type === type)?.value;
-  return `${get('year')}-${get('month')}-${get('day')}`;
-};
-
-// PH timezone ang clinic time; explicit offset para Safari-safe.
-const parseAppointmentDateTime = (dateValue, timeString) => {
-  const dateString = normalizeDateValue(dateValue);
-
-  if (!dateString || !timeString) {
-    return null;
-  }
-
-  const timeMatch = timeString.match(
-    /^(\d{1,2}):(\d{2})\s(AM|PM)$/i
-  );
-
-  if (!timeMatch) {
-    return null;
-  }
-
-  let hour = Number(timeMatch[1]);
-  const minute = timeMatch[2];
-  const period = timeMatch[3].toUpperCase();
-
-  if (period === 'AM' && hour === 12) {
-    hour = 0;
-  }
-
-  if (period === 'PM' && hour !== 12) {
-    hour += 12;
-  }
-
-  const hourString = String(hour).padStart(2, '0');
-
-  const isoDateTime =
-    `${dateString}T${hourString}:${minute}:00+08:00`;
-
-  const parsed = new Date(isoDateTime);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed;
-};
-
-const normalizeDateValue = (value) => {
-  if (!value) {
-    return '';
-  }
-
-  if (typeof value === 'string') {
-    const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-
-    if (match) {
-      return match[1];
-    }
-  }
-
-  return value;
-};
-
-const isSunday = (value) => {
-  const dateString = normalizeDateValue(value);
-
-  if (!dateString) {
-    return false;
-  }
-
-  const date = new Date(`${dateString}T00:00:00+08:00`);
-
-  return !Number.isNaN(date.getTime()) && date.getDay() === 0;
-};
 
 const Appointments = () => {
   const user = JSON.parse(
@@ -837,40 +757,6 @@ const Appointments = () => {
         3000
       );
     };
-
-  const formatDate = (
-    dateValue,
-    options = {}
-  ) => {
-    const dateString = normalizeDateValue(dateValue);
-
-    if (!dateString) {
-      return 'N/A';
-    }
-
-    try {
-      const [year, month, day] = dateString
-        .split('-')
-        .map(Number);
-
-      const safeDate = new Date(
-        Date.UTC(year, month - 1, day, 12, 0, 0)
-      );
-
-      return new Intl.DateTimeFormat(
-        'en-PH',
-        {
-          timeZone: 'Asia/Manila',
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          ...options,
-        }
-      ).format(safeDate);
-    } catch {
-      return dateString;
-    }
-  };
 
   if (!healthProfileDone) {
     return (

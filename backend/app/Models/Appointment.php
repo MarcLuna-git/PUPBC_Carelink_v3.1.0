@@ -45,11 +45,16 @@ class Appointment extends Model
         'approved_by',
         'approved_at',
         'rejection_reason',
+        'cancellation_reason',
+        'cancelled_by',
+        'cancelled_at',
     ];
 
     protected $casts = [
-        'appointment_date' => 'date',
+        // A clinic calendar date is not an instant; never serialize it in UTC.
+        'appointment_date' => 'date:Y-m-d',
         'approved_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function user()

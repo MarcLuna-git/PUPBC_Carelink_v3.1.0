@@ -265,6 +265,12 @@ class AuthController extends Controller
                 'message' => $result['message'],
             ], 200);
 
+        } catch (\App\Exceptions\RegistrationDeliveryException $e) {
+            return response()->json([
+                'success' => false,
+                'registration_pending' => true,
+                'message' => $e->getMessage(),
+            ], 503);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,

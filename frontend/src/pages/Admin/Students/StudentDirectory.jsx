@@ -13,8 +13,9 @@ export function Avatar({ student }) {
   </span>;
 }
 export function StatusBadge({ status }) {
-  const colors = { active: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', approved: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', completed: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', inactive: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', pending: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium capitalize ${colors[status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>{status?.replaceAll('_', ' ') || 'Not provided'}</span>;
+  const colors = { approved: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', completed: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300', inactive: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', pending: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', archived: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
+  const label = status || 'normal';
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium capitalize ${colors[status] || 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>{label.replaceAll('_', ' ')}</span>;
 }
 export function StudentFilters({ filters, onChange, onClear }) {
   const active = Object.values(filters).some(Boolean);
@@ -22,7 +23,7 @@ export function StudentFilters({ filters, onChange, onClear }) {
     ['course', 'Course', 'All Courses', courses.map(([value, label]) => [value, `${value} — ${label}`])],
     ['year', 'Year', 'All Years', years.map(value => [value, value])],
     ['section', 'Section', 'All Sections', sections.map(value => [value, value])],
-    ['status', 'Status', 'All Status', [['active', 'Active'], ['inactive', 'Inactive'], ['archived', 'Archived']]],
+    ['status', 'Status', 'All Status', [['inactive', 'Inactive'], ['archived', 'Archived']]],
   ];
   return <section aria-label="Student filters" className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-[minmax(240px,2fr)_repeat(4,minmax(110px,1fr))]">
