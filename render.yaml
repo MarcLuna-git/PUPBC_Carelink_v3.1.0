@@ -1,10 +1,13 @@
-
 services:
+  # Backend: Laravel sa Docker (walang native PHP runtime ang Render).
   - type: web
-    name: pup-carelink-testing-backend
-    region: oregon
+    name: pupbc-carelink-api
+    runtime: docker
+    region: singapore # pinakamalapit sa Supabase (Tokyo)
     plan: free
-    rootDir: backend
+    # Relative sa repo root ang mga path na ito.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /api/health
     envVars:
       - key: APP_NAME
@@ -12,22 +15,24 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: APP_KEY
-        # I-generate gamit ang php artisan key:generate --show.
-        # Ilagay ang value sa Render dashboard.
+        # Format: base64:xxxx (tingnan ang docs/RENDER_DEPLOYMENT.md).
         sync: false
       - key: APP_URL
-        value: https://pup-carelink-testing-backend.onrender.com
+        value: https://pupbc-carelink-api.onrender.com
       - key: FRONTEND_URL
-        value: https://pup-carelink-testing-frontend.onrender.com
+        value: https://pupbc-carelink.onrender.com
+      - key: LOG_CHANNEL
+        value: stderr
 
+      # Supabase session pooler (port 5432). Iwas sa prepared-statement errors ng 6543.
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
         value: aws-0-ap-northeast-1.pooler.supabase.com
       - key: DB_PORT
-        value: "6543"
+        value: "5432"
       - key: DB_DATABASE
         value: postgres
       - key: DB_USERNAME
@@ -37,26 +42,23 @@ services:
       - key: DB_SSLMODE
         value: require
 
-      - key: SUPABASE_URL
-        value: https://rbrhhuisskfdienbkqao.supabase.co
-      - key: SUPABASE_KEY
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
       - key: JWT_TTL
         value: "1440"
+      - key: KIOSK_DEVICE_TOKEN
+        # Makikita sa Render dashboard; ito ang ilalagay sa kiosk device.
+        generateValue: true
 
+      # Brevo SMTP. Bina-block ng Render free ang 25/465/587, kaya 2525.
       - key: MAIL_MAILER
         value: smtp
       - key: MAIL_HOST
-        value: smtp.gmail.com
+        value: smtp-relay.brevo.com
       - key: MAIL_PORT
-        value: "587"
+        value: "2525"
       - key: MAIL_USERNAME
-        value: pupbccarelink@gmail.com
+        sync: false
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_ENCRYPTION
@@ -76,7 +78,10 @@ services:
         value: local
 
       - key: SANCTUM_STATEFUL_DOMAINS
-        value: pup-carelink-testing-frontend.onrender.com
+        value: pupbc-carelink.onrender.com
+
+      - key: SEED_NURSE_PASSWORD
+        sync: false
 
       - key: SLOT_MAX
         value: "10"
@@ -96,13 +101,21 @@ services:
       - key: AUTH_RATE_LIMIT
         value: "10"
 
+  # Frontend: React/Vite bilang static site (libre, hindi natutulog, global CDN).
   - type: web
-    name: pup-carelink-testing-frontend
-    region: oregon
-    plan: free
-    rootDir: frontend
+    name: pupbc-carelink
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      # SPA: lahat ng path ay ibigay sa index.html para gumana ang React Router.
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
+      - key: NODE_VERSION # Vite 8 needs Node 20.19+ / 22.12+
+        value: "22"
       - key: VITE_API_URL
-        value: https://pup-carelink-testing-backend.onrender.com/api
+        value: https://pupbc-carelink-api.onrender.com/api
       - key: VITE_APP_NAME
         value: "PUPBC CareLink"

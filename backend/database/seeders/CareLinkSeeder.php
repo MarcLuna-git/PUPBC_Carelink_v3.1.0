@@ -34,14 +34,14 @@ class CareLinkSeeder extends Seeder
             [
                 'first_name' => 'Jane',
                 'last_name' => 'Doe',
-                'password' => Hash::make('nurse'),
+                'password' => Hash::make(env('SEED_NURSE_PASSWORD') ?: 'nurse'),
                 'role' => 'nurse',
                 'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
 
-        $this->command->info('Nurse account ready: nurse@pupbc.edu.ph / nurse');
+        $this->command->info('Nurse account ready: nurse@pupbc.edu.ph (password: SEED_NURSE_PASSWORD or "nurse")');
 
         // ============================================
         // 2. STUDENT ACCOUNT (logs in via Student Login page)

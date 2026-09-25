@@ -1,226 +1,122 @@
 # Render Deployment Guide — PUPBC CareLink
 
-This guide walks you through deploying the PUPBC CareLink full-stack application (Laravel backend + React/Vite frontend) to [Render](https://render.com).
+Setup: **Render Free** (backend = Docker, frontend = Static Site) + **Supabase Postgres** + **Brevo SMTP**.
+
+| Service | Render name | URL |
+|---|---|---|
+| Backend (Laravel 8, Docker, Singapore) | `pupbc-carelink-api` | `https://pupbc-carelink-api.onrender.com` |
+| Frontend (React/Vite, static CDN) | `pupbc-carelink` | `https://pupbc-carelink.onrender.com` |
+
+Lahat ng config ay nasa [`render.yaml`](../render.yaml).
 
 ---
 
-## Prerequisites
+## Step 1 — Supabase
 
-1. **Render Account** — Sign up at [render.com](https://render.com) (free tier available).
-2. **GitHub Repository** — Your code must be pushed to GitHub. This project is already connected to:
-   - `centy29: https://github.com/centy29/PUP-carelink-testing.git`
-3. **Supabase Project** — You need your Supabase connection pooler credentials:
-   - Pooler host: `aws-0-ap-northeast-1.pooler.supabase.com`
-   - Pooler port: `6543`
-   - Database: `postgres`
-   - Username: `postgres.<project-ref>`
-   - Password: (your Supabase password)
-4. **JWT Secret** — Generate with:
-   ```bash
-   cd backend
-   php artisan jwt:secret
-   ```
-5. **APP_KEY** — Generate with:
-   ```bash
-   cd backend
-   php artisan key:generate --show
-   ```
-6. **Gmail App Password** — For the mail configuration (if email features are used).
+1. **Palitan ang database password** (na-leak ito sa lumang git history):
+   Project Settings → Database → **Reset database password**. I-save ang bagong password.
+2. Pindutin ang **Connect** (itaas ng dashboard) → **Session pooler**. I-check:
+   - Host: `aws-0-ap-northeast-1.pooler.supabase.com` (kung iba, palitan ang `DB_HOST` sa `render.yaml`)
+   - Port: `5432`
+   - User: `postgres.rbrhhuisskfdienbkqao`
+3. **Table Editor** → may `users` at `migrations` table na ba? May row na ba na `role = nurse`?
+   - Oo → hindi na kailangang mag-seed (laktawan ang Step 6).
+   - Wala → gagawin ng deploy ang tables; mag-seed sa Step 6.
 
----
+## Step 2 — Brevo (email)
 
-## Step 1: Push `render.yaml` to GitHub
+Bina-block ng Render Free ang SMTP ports 25/465/587, kaya Brevo sa port **2525** ang gamit.
 
-The `render.yaml` file at the project root defines both services (backend + frontend) as Infrastructure-as-Code.
+1. Mag-sign up sa [brevo.com](https://www.brevo.com) (Free plan, 300 emails/day).
+2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: `pupbccarelink@gmail.com`. I-click ang verification link na papasok sa Gmail na iyon.
+3. **SMTP & API → SMTP** tab → **Generate a new SMTP key**. Kopyahin:
+   - **Login** (hal. `xxxxxx@smtp-brevo.com`) → `MAIL_USERNAME`
+   - **SMTP key** → `MAIL_PASSWORD`
+
+## Step 3 — APP_KEY
+
+Sa terminal (Node lang ang kailangan):
 
 ```bash
-git add render.yaml
-git add frontend/src/services/api.js
-git add backend/config/cors.php
-git add backend/.env.example
-git commit -m "Add Render deployment configuration"
-git push centy29 main
+node -e "console.log('base64:'+require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-> **Note:** The remote `centy29` points to `https://github.com/centy29/PUP-carelink-testing.git`.
+Kopyahin ang buong output (kasama ang `base64:`).
 
----
+## Step 4 — Bagong GitHub repo (walang lumang history)
 
-## Step 2: Create a Render Web Service
+1. GitHub → **New repository** → pangalan hal. `pupbc-carelink` → **Private** → huwag lagyan ng README.
+2. Sa project folder:
 
-1. Go to [render.com](https://render.com) and sign in.
-2. Click **"New"** → **"Web Service"**.
-3. Connect your GitHub account and select the repository: `centy29/PUP-carelink-testing`.
-4. Render will auto-detect the `render.yaml` file and show a preview of both services:
-   - `carelink-backend` (PHP/Laravel)
-   - `carelink-frontend` (Node.js/React)
-5. Click **"Create Web Services"**.
+```bash
+git checkout --orphan deploy
+git add -A
+git commit -m "PUPBC CareLink initial commit"
+git remote add deploy https://github.com/<USERNAME>/pupbc-carelink.git
+git push deploy deploy:main
+```
 
-Render will automatically:
-- Install PHP dependencies for the backend
-- Install npm dependencies and build the frontend
-- Run database migrations
-- Start both services
+Sa bagong repo, 1 commit lang, kaya hindi kasama ang lumang password. Ang lumang `main` mo ay nasa local pa rin.
+Sa susunod na update: mag-commit sa `deploy` branch at `git push deploy deploy:main`. Automatic magre-redeploy ang Render.
 
-### Start Commands (if creating services manually)
+## Step 5 — Render Blueprint
 
-If you create the services manually (without `render.yaml`), use these **Start Commands**:
-
-| Service | Start Command |
-|---------|--------------|
-| `carelink-backend` | `php artisan serve --host=0.0.0.0 --port=$PORT` |
-| `carelink-frontend` | `npx serve -s dist -l $PORT` |
-
-And these **Build Commands**:
-
-| Service | Build Command |
-|---------|--------------|
-| `carelink-backend` | `composer install --no-dev --optimize-autoloader --no-interaction && php artisan config:cache && php artisan route:cache && php artisan event:cache && php artisan storage:link && php artisan migrate --force` |
-| `carelink-frontend` | `npm install && npm run build` |
-
----
-
-## Step 3: Set Sensitive Environment Variables
-
-The `render.yaml` uses `sync: false` for sensitive variables. You must set these in the Render dashboard:
-
-### Backend Service (`carelink-backend`)
-
-Go to **Render Dashboard** → **carelink-backend** → **Environment** → **Environment Variables** and add:
-
-| Key | Value | Notes |
-|-----|-------|-------|
-| `DB_USERNAME` | `postgres.your-project` | Supabase pooler username |
-| `DB_PASSWORD` | *(your Supabase password)* | Supabase pooler password |
-| `SUPABASE_KEY` | *(your Supabase key)* | Can use anon key or service_role |
-| `SUPABASE_ANON_KEY` | *(your Supabase anon key)* | Supabase anon key |
-| `JWT_SECRET` | *(generated secret)* | From `php artisan jwt:secret` |
-| `MAIL_PASSWORD` | *(Gmail app password)* | For SMTP email |
-
-### Frontend Service (`carelink-frontend`)
-
-No additional secrets are needed — `VITE_API_URL` is already set in `render.yaml`.
-
----
-
-## Step 4: Update URLs After First Deploy
-
-After the first successful deploy, Render will assign each service a unique URL:
-
-- Backend: `https://carelink-backend.onrender.com`
-- Frontend: `https://carelink-frontend.onrender.com`
-
-Go to **carelink-backend** → **Environment** and update:
+1. [dashboard.render.com](https://dashboard.render.com) → **New → Blueprint** → i-connect ang GitHub → piliin ang bagong repo.
+2. Hihingin ng Render ang mga `sync: false` values:
 
 | Key | Value |
-|-----|-------|
-| `APP_URL` | `https://carelink-backend.onrender.com` |
-| `FRONTEND_URL` | `https://carelink-frontend.onrender.com` |
-| `SANCTUM_STATEFUL_DOMAINS` | `carelink-frontend.onrender.com` |
+|---|---|
+| `APP_KEY` | output ng Step 3 |
+| `DB_USERNAME` | `postgres.rbrhhuisskfdienbkqao` |
+| `DB_PASSWORD` | bagong Supabase password (Step 1) |
+| `MAIL_USERNAME` | Brevo SMTP login |
+| `MAIL_PASSWORD` | Brevo SMTP key |
+| `SEED_NURSE_PASSWORD` | malakas na password para sa nurse account |
 
-Then **Redeploy** the backend service.
+`JWT_SECRET` at `KIOSK_DEVICE_TOKEN` ay automatic na gine-generate.
 
----
+3. **Apply**. Mga 5–10 min ang unang build ng backend.
+4. Kung **iba ang URL** na binigay ng Render (kapag taken na ang pangalan), i-update:
+   - Frontend → Environment → `VITE_API_URL` = `https://<backend-url>/api` → **Save, rebuild, and deploy**
+   - Backend → Environment → `APP_URL`, `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`
 
-## Step 5: Verify Deployment
+## Step 6 — Seed (kung empty ang DB lang)
 
-1. **Backend Health Check:**
-   ```
-   https://carelink-backend.onrender.com/api/health
-   ```
-   Should return:
-   ```json
-   {
-     "success": true,
-     "status": "healthy",
-     "version": "1.0.0",
-     "timestamp": "...",
-     "environment": "production"
-   }
-   ```
+Walang Shell ang Render Free, kaya:
 
-2. **Frontend:**
-   Visit `https://carelink-frontend.onrender.com` — the landing page should load.
+1. Backend → **Environment** → Add `SEED_ON_BOOT` = `true` → Save (magre-redeploy).
+2. Kapag **Live** na, **burahin ang `SEED_ON_BOOT`** → Save. (Kung hindi, mare-reset ang nurse password sa bawat restart.)
 
-3. **API Test:**
-   ```
-   https://carelink-backend.onrender.com/api/test
-   ```
-   Should return:
-   ```json
-   {
-     "success": true,
-     "message": "PUPBC CareLink API is working!",
-     "version": "1.0.0"
-   }
-   ```
+Gumagawa ang seeder ng:
+- Nurse: `nurse@pupbc.edu.ph` / `SEED_NURSE_PASSWORD`
+- Demo student: `2021-00001-BN-0` / birthday `2002-05-15` / `student`
 
----
+## Step 7 — I-check
 
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Render (Oregon)                       │
-│                                                          │
-│  ┌──────────────────────┐    ┌────────────────────────┐ │
-│  │  carelink-frontend   │    │   carelink-backend     │ │
-│  │  (Node.js / Vite)    │    │   (PHP / Laravel 8)      │ │
-│  │  React SPA on :PORT  │◄──►│  API on :PORT            │ │
-│  │  VITE_API_URL points │    │  /api/* routes           │ │
-│  │  to backend          │    │  JWT auth                │ │
-│  └──────────────────────┘    └────────────────────────┘ │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-              ┌──────────────────────────┐
-              │     Supabase (AWS)        │
-              │  PostgreSQL (Pooler)      │
-              │  aws-0-ap-northeast-1     │
-              │  .pooler.supabase.com:6543│
-              └──────────────────────────┘
-```
+1. `https://pupbc-carelink-api.onrender.com/api/health` → dapat `"database": "connected"`.
+2. `https://pupbc-carelink.onrender.com` → dapat lumabas ang landing page.
+3. Nurse login sa `/carelink-portal`.
+4. Mag-register ng student → dapat may OTP email.
+5. Kiosk: Backend → Environment → kopyahin ang `KIOSK_DEVICE_TOKEN` → ilagay sa kiosk page kapag hiningi.
 
 ---
 
 ## Troubleshooting
 
-### Build Fails — "composer not found"
-Render's PHP runtime includes Composer. If you see issues, ensure `composer.json` is in the `backend/` directory (it is).
+| Problema | Ayos |
+|---|---|
+| Unang request ay mabagal o nag-timeout | Natutulog ang Free backend pagkatapos ng 15 min; ~1 min bago magising. I-refresh. |
+| `"database": "down"` | Mali ang `DB_USERNAME`/`DB_PASSWORD`/`DB_HOST`. Tingnan ang **Logs** ng backend. |
+| Walang OTP email | Na-verify ba ang sender sa Brevo? Tama ba ang SMTP login/key? Tingnan ang Brevo → Transactional → Logs. |
+| 404 kapag nag-refresh sa `/login` | Dapat may `routes` rewrite sa `render.yaml` (meron na). |
+| CORS error | Dapat tama ang `FRONTEND_URL`. Pinapayagan na rin ang lahat ng `*.onrender.com`. |
+| Kiosk: "not configured" (503) | Walang `KIOSK_DEVICE_TOKEN` sa backend env. |
+| Nawala ang profile pictures | Ephemeral ang disk ng Render Free; nabubura ang uploads sa redeploy o restart. Known limitation. |
 
-### Database Connection Errors
-- Verify `DB_USERNAME` and `DB_PASSWORD` are set in the Render dashboard.
-- Ensure the Supabase pooler allows connections (it should by default).
-- Check that `DB_SSLMODE=require` is set.
+## Bakit ganito ang setup
 
-### CORS Errors
-- Ensure `FRONTEND_URL` is set to the correct Render frontend URL.
-- The CORS config in `backend/config/cors.php` already includes Render domains.
-
-### Frontend Can't Reach Backend
-- Verify `VITE_API_URL` is set to `https://carelink-backend.onrender.com/api`.
-- Check that the backend service is running (health check endpoint).
-
-### Migrations Fail
-- Run manually via Render Shell:
-  ```bash
-  cd backend
-  php artisan migrate --force
-  ```
-- Or check the Render build logs for specific migration errors.
-
----
-
-## Local Development vs. Render
-
-| Feature | Local | Render |
-|---------|-------|--------|
-| Backend URL | `http://127.0.0.1:8000` | `https://carelink-backend.onrender.com` |
-| Frontend URL | `http://localhost:3000` | `https://carelink-frontend.onrender.com` |
-| API Base | `http://127.0.0.1:8000/api` | `https://carelink-backend.onrender.com/api` |
-| Database | Supabase pooler | Supabase pooler (same) |
-| APP_ENV | `local` | `production` |
-| APP_DEBUG | `true` | `false` |
-
-The frontend `api.js` automatically uses `VITE_API_URL` in production and falls back to hostname-based detection in local development.
+- **Docker backend**: walang native PHP runtime ang Render.
+- **`--no-reload` sa `php artisan serve`**: kung wala ito, binabasa ng Laravel 8 serve ang `.env` imbes na ang Render env vars.
+- **Port 5432 (session pooler)**: iwas sa prepared-statement errors ng transaction pooler (6543) sa Laravel/PDO.
+- **Singapore**: pinakamalapit na Render region sa Supabase (Tokyo).
+- **Static site frontend**: libre, hindi natutulog, nasa CDN.

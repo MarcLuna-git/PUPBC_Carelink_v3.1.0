@@ -45,7 +45,9 @@ RUN php artisan package:discover --ansi 2>/dev/null || true
 
 RUN php artisan storage:link 2>/dev/null || true
 
-# Render ang nagse-set ng PORT.
-EXPOSE $PORT
+# Render ang nagse-set ng PORT (default 10000).
+EXPOSE 10000
 
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"]
+# --no-reload: kung wala ito, tinatanggal ng serve ang Render env vars at .env.example ang gagamitin.
+# SEED_ON_BOOT=true: one-time seed (walang Shell sa Render free). Alisin pagkatapos.
+CMD ["sh", "-c", "php artisan migrate --force && if [ \"$SEED_ON_BOOT\" = \"true\" ]; then php artisan db:seed --force; fi && php artisan serve --no-reload --host=0.0.0.0 --port=${PORT:-10000}"]
