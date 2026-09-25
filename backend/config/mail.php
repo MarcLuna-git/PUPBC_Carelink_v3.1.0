@@ -3,15 +3,26 @@
 return [
 
 
-    'default' => env('MAIL_MAILER', 'smtp'),
+    'default' => env('MAIL_MAILER', 'array'),
+
+    // Explicit staging switch; independent of Railway's environment name.
+    'test_mode' => env('EMAIL_TEST_MODE', false),
+    'test_recipient' => env('EMAIL_TEST_RECIPIENT', 'delivered@resend.dev'),
 
 
     'mailers' => [
+        'resend' => [
+            'transport' => 'resend',
+            'key' => env('RESEND_API_KEY'),
+            'from_email' => env('RESEND_FROM_EMAIL'),
+            'from_name' => env('RESEND_FROM_NAME', 'PUPBC CareLink'),
+            'verified_domain' => env('RESEND_VERIFIED_DOMAIN'),
+        ],
         'smtp' => [
             'transport' => 'smtp',
             'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
-            'port' => env('MAIL_PORT', 587),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'port' => env('MAIL_PORT', 465),
+            'encryption' => env('MAIL_ENCRYPTION', 'ssl'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,

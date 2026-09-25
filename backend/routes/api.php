@@ -57,10 +57,11 @@ Route::get('/test', function () {
 });
 
 
+// Separate group counters; all groups still share the outer throttle:api limit.
 Route::prefix('kiosk')
     ->middleware([
         'kiosk.device',
-        'throttle:120,1',
+        'throttle:120,1,kiosk:',
     ])
     ->group(function () {
 
@@ -99,7 +100,7 @@ Route::prefix('kiosk')
 Route::prefix('auth')
     ->middleware([
         'jwt.configured',
-        'throttle:10,1',
+        'throttle:10,1,auth:',
     ])
     ->group(function () {
 
@@ -146,7 +147,7 @@ Route::prefix('auth')
     });
 
 
-Route::middleware('throttle:60,1')
+Route::middleware('throttle:60,1,announcements:')
     ->group(function () {
 
         Route::get(
@@ -164,7 +165,7 @@ Route::middleware('throttle:60,1')
 Route::middleware([
     'jwt.configured',
     'auth:api',
-    'throttle:60,1',
+    'throttle:60,1,authenticated:',
 ])
     ->group(function () {
 

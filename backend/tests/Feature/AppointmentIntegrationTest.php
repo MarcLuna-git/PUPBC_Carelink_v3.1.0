@@ -84,7 +84,10 @@ class AppointmentIntegrationTest extends TestCase
             $html = view($mail->view, $mail->buildViewData())->render();
             $this->assertStringContainsString($mail->appointmentDate, $html);
             $this->assertStringContainsString($appointment->time_slot, $html);
-            if ($mail->reason) $this->assertStringContainsString(e($mail->reason), $html);
+            if ($mail->reason) {
+                $this->assertStringNotContainsString(e($mail->reason), $html);
+                $this->assertStringContainsString('Sign in to CareLink to view the reason securely.', $html);
+            }
             return true;
         });
         $notices = Notification::where('user_id', $student->id)->where('type', 'appointment_' . $event)->get();

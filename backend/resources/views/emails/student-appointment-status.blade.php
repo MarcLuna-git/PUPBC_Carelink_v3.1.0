@@ -5,7 +5,7 @@
     <h1>{{ $title }}</h1>
     <p>{{ $eventMessage }}</p>
     @if ($reason)
-        <p>Reason: {{ $reason }}</p>
+        <p>Sign in to CareLink to view the reason securely.</p>
     @endif
     <p>Reference: {{ $referenceNumber }}</p>
     <p>Schedule: {{ $appointmentDate }} at {{ $timeSlot }} (Asia/Manila)</p>

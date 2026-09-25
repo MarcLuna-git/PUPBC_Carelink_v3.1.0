@@ -22,6 +22,11 @@ class VerifyEmail extends Mailable
 
     public function build()
     {
+        $mailer = $this->mailer ?: config('mail.default');
+        if (in_array(config("mail.mailers.{$mailer}.transport"), ['log', 'failover'], true)) {
+            throw new \RuntimeException('Registration OTP requires a mailer that does not log email bodies.');
+        }
+
         return $this->from(config('mail.from.address'), config('mail.from.name'))
                     ->subject('Email Verification - PUPBC CareLink')
                     ->markdown('emails.verify-email')

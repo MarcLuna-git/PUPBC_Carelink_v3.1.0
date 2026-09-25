@@ -71,6 +71,12 @@ class AuthService
             );
         }
 
+        if (PendingRegistration::where('email', $data['email'])->exists()) {
+            return [
+                'message' => 'A registration is already pending for this email. Enter your code or use Resend verification code to continue with the original details.',
+            ];
+        }
+
         $otp = $this->generateOtp();
 
         $data['password_hash'] = Hash::make($data['password']);
@@ -80,11 +86,9 @@ class AuthService
             $data['password_confirmation']
         );
 
-        $pending = PendingRegistration::updateOrCreate(
+        $pending = PendingRegistration::create(
             [
                 'email' => $data['email'],
-            ],
-            [
                 'student_id' => $data['student_id'],
                 'payload' => $data,
                 'otp_hash' => Hash::make($otp),
@@ -107,15 +111,11 @@ class AuthService
                     )
                 );
         } catch (\Throwable $e) {
-            $pending->delete();
+            // Retain the pending record: a timeout does not prove delivery failed.
+            \Log::error('Registration OTP email delivery was not confirmed.');
 
-            \Log::error(
-                'Registration OTP email failed: ' .
-                $e->getMessage()
-            );
-
-            throw new \Exception(
-                'We could not send the verification code. Check the email address or mail settings and try again.'
+            throw new \App\Exceptions\RegistrationDeliveryException(
+                'Email delivery was not confirmed. Your registration is pending. Enter your code if received, or use Resend verification code to try again.'
             );
         }
 
@@ -163,8 +163,7 @@ class AuthService
                 );
         } catch (\Throwable $e) {
             \Log::error(
-                'Registration resend OTP email failed: ' .
-                $e->getMessage()
+                'Registration resend OTP email failed.'
             );
 
             throw new \Exception(
@@ -383,8 +382,7 @@ class AuthService
                 );
         } catch (\Throwable $e) {
             \Log::error(
-                'Password reset email failed: ' .
-                $e->getMessage()
+                'Password reset email failed.'
             );
 
             $reset->update([

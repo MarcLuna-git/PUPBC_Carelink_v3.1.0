@@ -283,11 +283,16 @@ export default function Register() {
       setOtp('');
       setCooldown(60);
       setMessageType('success');
-      setMessage('A six-digit verification code was sent to your email. It is valid for 10 minutes.');
+      setMessage(response.message || 'Enter your verification code or request a new code.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setMessageType('error');
       setMessage(apiMessage(error, 'Unable to register. Please check your details.'));
+      if (error.response?.data?.registration_pending) {
+        setOtpStep(true);
+        setOtp('');
+        setCooldown(60);
+      }
       if (error.response?.status === 422 && error.response.data?.errors) setErrors(error.response.data.errors);
     } finally {
       submitRef.current = false;
