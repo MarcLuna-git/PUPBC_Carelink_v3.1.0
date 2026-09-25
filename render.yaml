@@ -64,7 +64,7 @@ services:
       - key: MAIL_ENCRYPTION
         value: tls
       - key: MAIL_FROM_ADDRESS
-        value: pupbccarelink@gmail.com
+        value: pupbinancarelink@gmail.com
       - key: MAIL_FROM_NAME
         value: "PUPBC CareLink"
       - key: MAIL_TIMEOUT

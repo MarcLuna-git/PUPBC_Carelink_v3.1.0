@@ -12,7 +12,7 @@ const Help = () => (
       </div>
       <div>
         <h3 className="font-semibold text-gray-900 dark:text-white">Contact Clinic</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Visit the PUP Biñan Campus Clinic or email pupbccarelink@gmail.com.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Visit the PUP Biñan Campus Clinic or email pupbinancarelink@gmail.com.</p>
       </div>
     </div>
   </div>

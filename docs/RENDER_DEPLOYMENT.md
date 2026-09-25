@@ -28,7 +28,7 @@ Lahat ng config ay nasa [`render.yaml`](../render.yaml).
 Bina-block ng Render Free ang SMTP ports 25/465/587, kaya Brevo sa port **2525** ang gamit.
 
 1. Mag-sign up sa [brevo.com](https://www.brevo.com) (Free plan, 300 emails/day).
-2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: `pupbccarelink@gmail.com`. I-click ang verification link na papasok sa Gmail na iyon.
+2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: `pupbinancarelink@gmail.com`. I-click ang verification link na papasok sa Gmail na iyon.
 3. **SMTP & API → SMTP** tab → **Generate a new SMTP key**. Kopyahin:
    - **Login** (hal. `xxxxxx@smtp-brevo.com`) → `MAIL_USERNAME`
    - **SMTP key** → `MAIL_PASSWORD`
