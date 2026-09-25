@@ -103,11 +103,11 @@ class HealthProfile extends Model
         'agree_privacy' => 'boolean',
         'agree_terms' => 'boolean',
 
-        'hospitalization_date' => 'date',
-        'surgery_date' => 'date',
-        'covid_date' => 'date',
-        'last_menstrual_period' => 'date',
-        'consent_date' => 'date',
+        'hospitalization_date' => 'date:Y-m-d',
+        'surgery_date' => 'date:Y-m-d',
+        'covid_date' => 'date:Y-m-d',
+        'last_menstrual_period' => 'date:Y-m-d',
+        'consent_date' => 'date:Y-m-d',
 
         'completed_at' => 'datetime',
     ];

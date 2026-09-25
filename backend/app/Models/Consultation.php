@@ -35,7 +35,7 @@ class Consultation extends Model
         'vital_signs' => \App\Casts\NormalizedArray::class,
         'medical_certificate' => 'boolean',
         'follow_up_required' => 'boolean',
-        'follow_up_date' => 'date',
+        'follow_up_date' => 'date:Y-m-d',
     ];
 
     public function user()

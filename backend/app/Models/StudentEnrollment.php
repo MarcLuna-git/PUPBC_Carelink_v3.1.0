@@ -13,7 +13,7 @@ class StudentEnrollment extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     protected $fillable = ['user_id', 'course_section_id', 'status', 'enrolled_at'];
-    protected $casts = ['enrolled_at' => 'date'];
+    protected $casts = ['enrolled_at' => 'date:Y-m-d'];
 
     protected static function boot()
     {

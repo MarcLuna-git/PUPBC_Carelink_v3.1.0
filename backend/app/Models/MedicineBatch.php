@@ -14,7 +14,7 @@ class MedicineBatch extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     protected $fillable = ['medicine_id', 'lot_number', 'quantity', 'expiry_date', 'received_at', 'supplier', 'reference'];
-    protected $casts = ['quantity' => 'integer', 'expiry_date' => 'date', 'received_at' => 'date'];
+    protected $casts = ['quantity' => 'integer', 'expiry_date' => 'date:Y-m-d', 'received_at' => 'date:Y-m-d'];
 
     protected static function boot()
     {

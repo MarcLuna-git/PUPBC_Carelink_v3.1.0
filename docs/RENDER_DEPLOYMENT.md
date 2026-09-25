@@ -120,3 +120,6 @@ Gumagawa ang seeder ng:
 - **Port 5432 (session pooler)**: iwas sa prepared-statement errors ng transaction pooler (6543) sa Laravel/PDO.
 - **Singapore**: pinakamalapit na Render region sa Supabase (Tokyo).
 - **Static site frontend**: libre, hindi natutulog, nasa CDN.
+- **`migrate --force` sa bawat boot**: walang pre-deploy step ang Render Free, at kailangang sabay ang bagong code at schema (hal. `users.status` na `active` → `NULL`). **Babala:** kung may teammate na gumagamit ng parehong Supabase gamit ang lumang code, hindi na siya makaka-login bilang nurse pagkatapos ng migration. I-update muna ang code nila.
+- **Auto-expire ng appointments**: walang cron sa Render Free, kaya ang unang API request ng araw ang nag-e-expire ng mga lumang pending appointment (`ExpireStaleAppointments` middleware).
+- **`EMAIL_TEST_MODE=false`**: kapag `true`, lahat ng email ay napupunta sa `EMAIL_TEST_RECIPIENT` (pang-staging lang).

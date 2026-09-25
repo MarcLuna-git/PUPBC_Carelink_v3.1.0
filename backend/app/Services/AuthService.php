@@ -317,7 +317,7 @@ class AuthService
 
         if (
             !$user ||
-            $user->status !== null ||
+            in_array($user->status, ['inactive', 'archived'], true) ||
             !$this->verifyPassword(
                 $password,
                 $user->password

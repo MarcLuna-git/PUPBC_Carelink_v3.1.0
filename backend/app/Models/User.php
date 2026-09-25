@@ -63,7 +63,7 @@ class User extends Authenticatable implements JWTSubject
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'birthday' => 'date',
+        'birthday' => 'date:Y-m-d',
         'last_login_at' => 'datetime',
         'archived_at' => 'datetime',
     ];
