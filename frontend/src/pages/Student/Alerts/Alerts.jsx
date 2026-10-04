@@ -97,6 +97,7 @@ const getNotificationLink = (
   ).toLowerCase();
 
   if (
+    type === 'appointment' ||
     type.startsWith(
       'appointment_'
     )
@@ -111,7 +112,7 @@ const getNotificationLink = (
     return '/student/health-records';
   }
 
-  return null;
+  return '/student/alerts';
 };
 
 const formatDate = (dateStr) => {

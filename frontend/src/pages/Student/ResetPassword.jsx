@@ -27,6 +27,8 @@ const OTP_EXPIRY_MINUTES = 10;
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const role = location.pathname.startsWith('/nurse/') ? 'nurse' : 'student';
+  const loginPath = role === 'nurse' ? '/carelink-portal' : '/login';
 
   const initialEmail =
     location.state?.email?.trim() || '';
@@ -74,12 +76,13 @@ const ResetPassword = () => {
     showConfirmPassword,
     setShowConfirmPassword,
   ] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
 
 
   useEffect(() => {
     if (!initialEmail) {
       navigate(
-        '/forgot-password',
+        role === 'nurse' ? '/nurse/forgot-password' : '/forgot-password',
         {
           replace: true,
         }
@@ -88,6 +91,7 @@ const ResetPassword = () => {
   }, [
     initialEmail,
     navigate,
+    role,
   ]);
 
 
@@ -139,6 +143,7 @@ const ResetPassword = () => {
       nextValue = value
         .replace(/\D/g, '')
         .slice(0, 6);
+      setOtpVerified(false);
     }
 
     setForm(
@@ -152,6 +157,10 @@ const ResetPassword = () => {
       messageType ===
       'error'
     ) {
+      setMessage('');
+      setMessageType('');
+    }
+    if (name === 'otp' && otpVerified) {
       setMessage('');
       setMessageType('');
     }
@@ -198,12 +207,14 @@ const ResetPassword = () => {
           otp: '',
         })
       );
+      setOtpVerified(false);
 
       try {
         const res =
           await authService
             .resendPasswordResetOtp(
-              email
+              email,
+              role
             );
 
         if (res.success) {
@@ -294,6 +305,31 @@ const ResetPassword = () => {
         return;
       }
 
+      if (!otpVerified) {
+        setLoading(true);
+        setMessage('');
+        setMessageType('');
+
+        try {
+          const res = await authService.verifyPasswordResetOtp(email, otp, role);
+          setOtpVerified(true);
+          setMessageType('success');
+          setMessage(res.message || 'OTP verified. You may now choose a new password.');
+        } catch (err) {
+          setMessageType('error');
+          setMessage(err.response?.data?.message || 'OTP verification failed. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (!form.password.trim() || !form.password_confirmation.trim()) {
+        setMessageType('error');
+        setMessage('Enter a new password and confirm it.');
+        return;
+      }
+
       if (
         form.password.length <
         8
@@ -335,7 +371,8 @@ const ResetPassword = () => {
               email,
               otp,
               form.password,
-              form.password_confirmation
+              form.password_confirmation,
+              role
             );
 
         if (res.success) {
@@ -351,7 +388,7 @@ const ResetPassword = () => {
           window.setTimeout(
             () => {
               navigate(
-                '/login',
+                loginPath,
                 {
                   replace:
                     true,
@@ -479,14 +516,14 @@ const ResetPassword = () => {
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={6}
+              disabled={loading || resendingOtp}
               placeholder="000000"
               autoComplete="one-time-code"
               required
             />
 
             <div className="mt-2 text-center">
-              {otpCooldown >
-              0 ? (
+              {!otpVerified && (otpCooldown > 0 ? (
                 <p className="text-xs text-gray-500">
                   Resend code in{' '}
                   <strong>
@@ -517,10 +554,12 @@ const ResetPassword = () => {
                     ? 'Resending...'
                     : 'Resend OTP'}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 
+          {otpVerified ? (
+            <>
           <div>
             <label className="font-semibold text-sm text-gray-700 pb-1 block">
               New Password
@@ -630,6 +669,12 @@ const ResetPassword = () => {
                 Passwords match.
               </p>
             )}
+            </>
+          ) : (
+            <p className="text-center text-sm text-gray-500">
+              Verify your OTP to continue to password creation.
+            </p>
+          )}
 
           <button
             className="w-full py-3 bg-gradient-to-r from-maroon-800 to-maroon-900 hover:from-maroon-900 hover:to-maroon-950 text-white font-semibold rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
@@ -647,15 +692,15 @@ const ResetPassword = () => {
 
             <span>
               {loading
-                ? 'Resetting...'
-                : 'Reset Password'}
+                ? (otpVerified ? 'Resetting...' : 'Verifying...')
+                : (otpVerified ? 'Reset Password' : 'Verify OTP')}
             </span>
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <Link
-            to="/login"
+            to={loginPath}
             className="text-sm text-gray-500 hover:text-maroon-800 hover:underline inline-flex items-center space-x-1"
           >
             <ArrowLeft className="w-4 h-4" />

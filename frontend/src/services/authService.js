@@ -90,9 +90,12 @@ const authService = {
   },
 
 
-  async forgotPassword(email) {
+  async forgotPassword(email, role = 'student') {
+    const endpoint = role === 'nurse'
+      ? '/auth/nurse/forgot-password'
+      : '/auth/forgot-password';
     const response = await api.post(
-      '/auth/forgot-password',
+      endpoint,
       {
         email,
       }
@@ -102,9 +105,12 @@ const authService = {
   },
 
   // Gamit ulit ang forgot-password endpoint; papalitan nito ang dating OTP.
-  async resendPasswordResetOtp(email) {
+  async resendPasswordResetOtp(email, role = 'student') {
+    const endpoint = role === 'nurse'
+      ? '/auth/nurse/forgot-password'
+      : '/auth/forgot-password';
     const response = await api.post(
-      '/auth/forgot-password',
+      endpoint,
       {
         email,
       }
@@ -113,14 +119,27 @@ const authService = {
     return response.data;
   },
 
+  async verifyPasswordResetOtp(email, otp, role = 'student') {
+    const endpoint = role === 'nurse'
+      ? '/auth/nurse/verify-password-reset-otp'
+      : '/auth/verify-password-reset-otp';
+    const response = await api.post(endpoint, { email, otp });
+
+    return response.data;
+  },
+
   async resetPassword(
     email,
     otp,
     password,
-    password_confirmation
+    password_confirmation,
+    role = 'student'
   ) {
+    const endpoint = role === 'nurse'
+      ? '/auth/nurse/reset-password'
+      : '/auth/reset-password';
     const response = await api.post(
-      '/auth/reset-password',
+      endpoint,
       {
         email,
         otp,

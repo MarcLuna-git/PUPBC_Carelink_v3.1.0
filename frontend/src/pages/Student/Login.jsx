@@ -65,9 +65,7 @@ const getRememberedLogin = () => {
 };
 
 const formatStudentId = (value) => {
-  const clean = String(value)
-    .toUpperCase()
-    .replace(/[^0-9BN]/g, '');
+  const clean = String(value).replace(/\D/g, '').slice(0, 10);
 
   if (clean.length <= 4) return clean;
 
@@ -75,11 +73,18 @@ const formatStudentId = (value) => {
     return `${clean.slice(0, 4)}-${clean.slice(4)}`;
   }
 
-  if (clean.length <= 11) {
-    return `${clean.slice(0, 4)}-${clean.slice(4, 9)}-${clean.slice(9)}`;
-  }
+  return `${clean.slice(0, 4)}-${clean.slice(4, 9)}-BN-${clean.slice(9)}`;
+};
 
-  return `${clean.slice(0, 4)}-${clean.slice(4, 9)}-${clean.slice(9, 11)}-${clean.slice(11, 12)}`;
+const getManilaDate = () => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (name) => parts.find((item) => item.type === name)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
 };
 
 // Display-only countdown.
@@ -145,15 +150,18 @@ const Login = () => {
 
   const isLocked = lockSeconds > 0;
 
-  const currentYear = new Date().getFullYear();
+  const today = getManilaDate();
+  const currentYear = Number(today.slice(0, 4));
+  const latestBirthYear = currentYear - 17;
+  const latestBirthDate = `${latestBirthYear}${today.slice(4)}`;
 
   const birthYears = useMemo(
     () =>
       Array.from(
         { length: 100 },
-        (_, index) => currentYear - index
+        (_, index) => latestBirthYear - index
       ),
-    [currentYear]
+    [latestBirthYear]
   );
 
   const birthDays = useMemo(() => {
@@ -261,9 +269,12 @@ const Login = () => {
       if (!correctDate) {
         nextErrors.birthday =
           'Please enter a valid birthday';
-      } else if (actual.getTime() > Date.now()) {
+      } else if (getBirthdayValue() > today) {
         nextErrors.birthday =
           'Birthday cannot be in the future';
+      } else if (getBirthdayValue() > latestBirthDate) {
+        nextErrors.birthday =
+          'You must be at least 17 years old';
       }
     }
 
@@ -805,12 +816,12 @@ const Login = () => {
 
                   <input
                     id="student-password"
-                    className={`w-full border rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:ring-2 transition-all dark:bg-gray-700 dark:text-white ${
+                    type={showPassword ? 'text' : 'password'}
+                    className={`w-full border rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:ring-2 transition-all dark:bg-gray-700 dark:text-white password-input ${
                       errors.password
                         ? 'border-red-300 focus:ring-red-400 bg-red-50 dark:bg-red-900/20'
                         : 'border-gray-300 dark:border-gray-600 focus:ring-maroon-500 hover:border-maroon-300'
                     }`}
-                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={form.password}
                     onChange={handleChange}

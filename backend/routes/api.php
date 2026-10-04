@@ -135,6 +135,26 @@ Route::prefix('auth')
         );
 
         Route::post(
+            '/verify-password-reset-otp',
+            [AuthController::class, 'verifyPasswordResetOtp']
+        );
+
+        Route::post(
+            '/nurse/forgot-password',
+            [AuthController::class, 'nurseForgotPassword']
+        );
+
+        Route::post(
+            '/nurse/verify-password-reset-otp',
+            [AuthController::class, 'nurseVerifyPasswordResetOtp']
+        );
+
+        Route::post(
+            '/nurse/reset-password',
+            [AuthController::class, 'nurseResetPassword']
+        );
+
+        Route::post(
             '/nurse-login',
             [AuthController::class, 'nurseLogin']
         );
@@ -209,6 +229,10 @@ Route::middleware([
             ->group(function () {
 
                 Route::get('/', function (Request $request) {
+                    $validated = $request->validate([
+                        'limit' => 'nullable|integer|min:1|max:50',
+                    ]);
+
                     $notifications =
                         \App\Models\Notification::where(
                             'user_id',
@@ -218,11 +242,16 @@ Route::middleware([
                                 'created_at',
                                 'desc'
                             )
-                            ->paginate(20);
+                            ->paginate($validated['limit'] ?? 20);
+
+                    $unreadCount = \App\Models\Notification::where('user_id', auth()->id())
+                        ->where('read', false)
+                        ->count();
 
                     return response()->json([
                         'success' => true,
                         'data' => $notifications,
+                        'unread_count' => $unreadCount,
                     ]);
                 });
 
@@ -267,6 +296,30 @@ Route::middleware([
                         ]);
                     }
                 );
+
+                Route::delete('/{id}', function ($id) {
+                    $notification = \App\Models\Notification::where('id', $id)
+                        ->where('user_id', auth()->id())
+                        ->first();
+
+                    if (!$notification) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Notification not found.',
+                        ], 404);
+                    }
+
+                    $notification->delete();
+                    $unreadCount = \App\Models\Notification::where('user_id', auth()->id())
+                        ->where('read', false)
+                        ->count();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Notification deleted.',
+                        'unread_count' => $unreadCount,
+                    ]);
+                });
             });
 
 

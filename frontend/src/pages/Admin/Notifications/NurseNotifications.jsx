@@ -1,11 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Bell, Calendar, Loader2, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Calendar, Loader2, CheckCheck, Trash2 } from 'lucide-react';
 import api from '../../../services/api';
 
+const getNotificationLink = (notification) => {
+  if (notification?.link) return notification.link;
+  if (notification?.data?.link) return notification.data.link;
+
+  const type = String(notification?.type || '').toLowerCase();
+  if (type === 'appointment' || type.startsWith('appointment_')) return '/nurse/appointments';
+  if (type.startsWith('medicine_')) return '/nurse/medicines';
+  if (type.startsWith('student_')) return '/nurse/students';
+  if (type.startsWith('consultation_')) return '/nurse/consultation';
+  return '/nurse/dashboard';
+};
+
 const NurseNotifications = () => {
+  const navigate = useNavigate();
   const [notifs, setNotifs] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -15,52 +31,93 @@ const NurseNotifications = () => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
-      const response = await api.get('/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/notifications');
       if (response.data.success) {
+        setUnreadCount(Math.max(0, Number(response.data.unread_count) || 0));
         const data = response.data.data;
         const notifications = Array.isArray(data) ? data : (data?.data || []);
-        const formatted = notifications.map(n => ({
+        setNotifs(notifications.map(n => ({
           id: n.id,
           title: n.title || n.type || 'Notification',
           message: n.message || n.text || n.description || '',
           time: formatTimeAgo(n.created_at),
-          read: n.read || false,
+          read: Boolean(n.read),
           type: n.type || 'info',
-        }));
-        setNotifs(formatted);
+          data: n.data || {},
+          link: getNotificationLink(n),
+        })));
       }
     } catch (err) {
-      console.log('Notifications error:', err);
+      console.error('Notifications error:', err);
       setError('Failed to load notifications.');
     } finally {
       setLoading(false);
     }
   };
 
+  const syncUnreadCount = async () => {
+    try {
+      const response = await api.get('/notifications', { params: { limit: 1 } });
+      const unreadCount = Number(response.data?.unread_count) || 0;
+      setUnreadCount(unreadCount);
+      window.dispatchEvent(new CustomEvent('carelink:nurse-notifications-updated', {
+        detail: { unreadCount },
+      }));
+    } catch (err) {
+      console.error('Unread notification count refresh failed:', err);
+    }
+  };
+
   const markAsRead = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await api.patch(`/notifications/${id}/read`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.patch(`/notifications/${id}/read`);
       setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      syncUnreadCount();
     } catch (err) {
-      console.log('Mark read error:', err);
+      console.error('Mark read error:', err);
     }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) await markAsRead(notification.id);
+    navigate(notification.link);
   };
 
   const markAllAsRead = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await api.patch('/notifications/read-all', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.patch('/notifications/read-all');
       setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      window.dispatchEvent(new CustomEvent('carelink:nurse-notifications-updated', {
+        detail: { unreadCount: 0 },
+      }));
     } catch (err) {
-      console.log('Mark all read error:', err);
+      console.error('Mark all read error:', err);
+      setError('Failed to mark notifications as read.');
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    if (deletingId) return;
+    setDeletingId(id);
+    try {
+      const response = await api.delete(`/notifications/${id}`);
+      setNotifs(prev => prev.filter(n => n.id !== id));
+      const unreadCount = Number(response.data?.unread_count);
+      if (Number.isFinite(unreadCount)) {
+        setUnreadCount(Math.max(0, unreadCount));
+        window.dispatchEvent(new CustomEvent('carelink:nurse-notifications-updated', {
+          detail: { unreadCount },
+        }));
+      } else {
+        await syncUnreadCount();
+      }
+    } catch (err) {
+      console.error('Delete notification error:', err);
+      setError('Failed to delete notification.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -78,8 +135,6 @@ const NurseNotifications = () => {
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
-
-  const unreadCount = notifs.filter(n => !n.read).length;
 
   if (loading) {
     return (
@@ -99,7 +154,7 @@ const NurseNotifications = () => {
           </p>
         </div>
         {unreadCount > 0 && (
-          <button 
+          <button
             onClick={markAllAsRead}
             className="flex items-center space-x-1.5 text-xs font-semibold text-maroon-600 dark:text-maroon-400 hover:text-maroon-800 dark:hover:text-maroon-300 bg-maroon-50 dark:bg-maroon-900/20 px-3 py-1.5 rounded-xl transition"
           >
@@ -122,31 +177,43 @@ const NurseNotifications = () => {
       ) : (
         <div className="space-y-2">
           {notifs.map(n => (
-            <div 
-              key={n.id} 
-              onClick={() => !n.read && markAsRead(n.id)}
-              className={`bg-white dark:bg-gray-800 rounded-2xl border p-4 cursor-pointer transition hover:shadow-md ${
-                !n.read 
-                  ? 'border-l-4 border-l-maroon-800 bg-maroon-50/30 dark:bg-maroon-900/10' 
+            <div
+              key={n.id}
+              className={`bg-white dark:bg-gray-800 rounded-2xl border p-4 transition hover:shadow-md flex items-start space-x-3 ${
+                !n.read
+                  ? 'border-l-4 border-l-maroon-800 bg-maroon-50/30 dark:bg-maroon-900/10'
                   : 'border-gray-100 dark:border-gray-700 opacity-75'
-              }`}>
-              <div className="flex items-start space-x-3">
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => handleNotificationClick(n)}
+                className="flex flex-1 min-w-0 items-start space-x-3 text-left"
+              >
                 <Bell className={`w-5 h-5 mt-0.5 flex-shrink-0 ${n.read ? 'text-gray-400' : 'text-maroon-800 dark:text-maroon-400'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className={`text-sm ${n.read ? 'font-medium text-gray-500 dark:text-gray-400' : 'font-bold text-gray-900 dark:text-white'}`}>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center justify-between">
+                    <span className={`text-sm ${n.read ? 'font-medium text-gray-500 dark:text-gray-400' : 'font-bold text-gray-900 dark:text-white'}`}>
                       {n.title}
-                    </h3>
-                    {!n.read && (
-                      <span className="w-2 h-2 bg-maroon-600 rounded-full flex-shrink-0 ml-2"></span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{n.message}</p>
-                  <p className="text-xs text-gray-400 mt-1.5 flex items-center">
+                    </span>
+                    {!n.read && <span className="w-2 h-2 bg-maroon-600 rounded-full flex-shrink-0 ml-2" />}
+                  </span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{n.message}</span>
+                  <span className="block text-xs text-gray-400 mt-1.5">
                     <Calendar className="w-3 h-3 inline mr-1" />{n.time}
-                  </p>
-                </div>
-              </div>
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteNotification(n.id)}
+                disabled={deletingId === n.id}
+                aria-label={`Delete ${n.title}`}
+                title="Delete notification"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                {deletingId === n.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              </button>
             </div>
           ))}
         </div>

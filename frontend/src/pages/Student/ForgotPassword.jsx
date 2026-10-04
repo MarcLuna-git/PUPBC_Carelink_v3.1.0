@@ -4,6 +4,7 @@ import {
 
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router-dom';
 
@@ -17,6 +18,10 @@ import {
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = location.pathname.startsWith('/nurse/') ? 'nurse' : 'student';
+  const loginPath = role === 'nurse' ? '/carelink-portal' : '/login';
+  const resetPath = role === 'nurse' ? '/nurse/reset-password' : '/reset-password';
 
   const [email, setEmail] =
     useState('');
@@ -49,7 +54,8 @@ const ForgotPassword = () => {
         const res =
           await authService
             .forgotPassword(
-              cleanEmail
+              cleanEmail,
+              role
             );
 
         if (res.success) {
@@ -62,7 +68,7 @@ const ForgotPassword = () => {
           window.setTimeout(
             () => {
               navigate(
-                '/reset-password',
+                resetPath,
                 {
                   state: {
                     email:
@@ -184,7 +190,7 @@ const ForgotPassword = () => {
         <div className="mt-6 text-center">
 
           <Link
-            to="/login"
+            to={loginPath}
             className="text-sm text-maroon-800 hover:text-maroon-900 hover:underline inline-flex items-center space-x-1"
           >
             <ArrowLeft className="w-4 h-4" />

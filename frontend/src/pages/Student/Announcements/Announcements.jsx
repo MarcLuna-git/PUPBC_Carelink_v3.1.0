@@ -16,11 +16,22 @@ const getCachedAnnouncements = () => {
   }
 };
 
+const getLastViewedAt = () => {
+  try {
+    const stored = Number(localStorage.getItem('carelink.student.announcements.lastViewedAt'));
+    return Number.isFinite(stored) && stored > 0 ? stored : Date.now();
+  } catch {
+    return Date.now();
+  }
+};
+
 const Announcements = () => {
+  const [lastViewedAt] = useState(getLastViewedAt);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [announcements, setAnnouncements] = useState(getCachedAnnouncements);
+  const [announcementCount, setAnnouncementCount] = useState(() => getCachedAnnouncements().length);
   const [loading, setLoading] = useState(() => getCachedAnnouncements().length === 0);
   const [error, setError] = useState('');
 
@@ -33,6 +44,8 @@ const Announcements = () => {
       if (response.data.success) {
         const data = response.data.data;
         const items = Array.isArray(data) ? data : (data?.data || []);
+        const total = Number(data?.total);
+        setAnnouncementCount(Number.isFinite(total) ? total : items.length);
         const normalizedAnnouncements = items.map(a => ({
           id: a.id,
           title: a.title || 'Announcement',
@@ -57,6 +70,11 @@ const Announcements = () => {
   };
 
   useEffect(() => {
+    try {
+      localStorage.setItem('carelink.student.announcements.lastViewedAt', String(Date.now()));
+    } catch {
+      // Announcement browsing continues when browser storage is unavailable.
+    }
     fetchAnnouncements();
     const interval = setInterval(fetchAnnouncements, 60000);
     const handleFocus = () => fetchAnnouncements();
@@ -66,6 +84,10 @@ const Announcements = () => {
       window.removeEventListener('focus', handleFocus); 
     };
   }, []);
+
+  const newAnnouncementCount = announcements.filter(
+    (announcement) => new Date(announcement.date).getTime() > lastViewedAt
+  ).length;
 
   const categories = ['all', ...new Set(announcements.map(a => a.category))];
 
@@ -153,7 +175,12 @@ const Announcements = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Announcements</h1>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {announcements.length} announcement{announcements.length !== 1 ? 's' : ''}
+            {announcementCount} announcement{announcementCount !== 1 ? 's' : ''}
+            {newAnnouncementCount > 0 && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                {newAnnouncementCount} new
+              </span>
+            )}
           </p>
         </div>
         <button 
@@ -234,6 +261,11 @@ const Announcements = () => {
                           <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${config.bg}`}>
                             {ann.category}
                           </span>
+                          {new Date(ann.date).getTime() > lastViewedAt && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                              New
+                            </span>
+                          )}
                           <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDate(ann.date)}

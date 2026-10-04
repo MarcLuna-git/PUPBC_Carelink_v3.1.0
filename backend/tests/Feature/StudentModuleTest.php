@@ -167,6 +167,63 @@ class StudentModuleTest extends TestCase
             ->assertJsonPath('data.qr_code_hash', 'student-module-active-hash');
     }
 
+    public function test_nurse_can_delete_only_own_notification_through_shared_endpoint(): void
+    {
+        $nurse = User::create([
+            'student_id' => 'NURSE-' . Str::random(10),
+            'first_name' => 'Nurse',
+            'last_name' => 'One',
+            'email' => Str::uuid() . '@example.test',
+            'password' => Hash::make('TestPassword123!'),
+            'role' => 'nurse',
+            'status' => null,
+        ]);
+        $other = User::create([
+            'student_id' => 'NURSE-' . Str::random(10),
+            'first_name' => 'Nurse',
+            'last_name' => 'Two',
+            'email' => Str::uuid() . '@example.test',
+            'password' => Hash::make('TestPassword123!'),
+            'role' => 'nurse',
+            'status' => null,
+        ]);
+        $own = Notification::create([
+            'user_id' => $nurse->id,
+            'type' => 'appointment_pending',
+            'title' => 'New booking',
+            'message' => 'A student booked an appointment.',
+            'read' => false,
+        ]);
+        $remaining = Notification::create([
+            'user_id' => $nurse->id,
+            'type' => 'appointment_cancelled',
+            'title' => 'Cancelled',
+            'message' => 'A student cancelled an appointment.',
+            'read' => false,
+        ]);
+        $foreign = Notification::create([
+            'user_id' => $other->id,
+            'type' => 'appointment_pending',
+            'title' => 'Foreign',
+            'message' => 'Another nurse notification.',
+            'read' => false,
+        ]);
+
+        $this->actingAs($nurse, 'api')
+            ->getJson('/api/notifications?limit=1')
+            ->assertOk()
+            ->assertJsonPath('unread_count', 2);
+
+        $this->deleteJson('/api/notifications/' . $foreign->id)->assertNotFound();
+        $this->deleteJson('/api/notifications/' . $own->id)
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1);
+
+        $this->assertDatabaseMissing('notifications', ['id' => $own->id]);
+        $this->assertDatabaseHas('notifications', ['id' => $remaining->id]);
+        $this->assertDatabaseHas('notifications', ['id' => $foreign->id]);
+    }
+
     public function test_notification_actions_are_scoped_and_delete_persists(): void
     {
         $student = $this->student();

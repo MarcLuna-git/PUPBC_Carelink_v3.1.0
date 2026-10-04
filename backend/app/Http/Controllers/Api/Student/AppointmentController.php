@@ -267,6 +267,14 @@ class AppointmentController extends Controller
                 ],
                 'read' => false,
             ]);
+            app(\App\Services\AppointmentEventNotification::class)->notifyActiveNurses(
+                $appointment,
+                'appointment_pending',
+                'New Appointment Booking',
+                'A student booked a ' . $appointment->service . ' appointment for '
+                    . $appointment->appointment_date->format('M j, Y')
+                    . ' at ' . $appointment->time_slot . '.'
+            );
             app(StudentAppointmentMail::class)->afterCommit($appointment);
 
             Cache::forget(
@@ -617,6 +625,14 @@ class AppointmentController extends Controller
                     ],
                     'read' => false,
                 ]);
+                app(\App\Services\AppointmentEventNotification::class)->notifyActiveNurses(
+                    $appointment,
+                    'appointment_cancelled',
+                    'Appointment Cancelled',
+                    'A student cancelled a ' . $appointment->service . ' appointment for '
+                        . $appointment->appointment_date->format('M j, Y')
+                        . ' at ' . $appointment->time_slot . '.'
+                );
                 app(StudentAppointmentMail::class)->afterCommit($appointment);
 
                 Cache::forget(

@@ -31,6 +31,15 @@ class AppointmentIntegrationTest extends TestCase
             while (DB::transactionLevel() > 0) DB::rollBack();
             // After-commit tests clean up only their own generated fixtures.
             DB::transaction(function () {
+                $appointmentIds = Appointment::whereIn('user_id', $this->users)->pluck('id')->all();
+                if ($appointmentIds) {
+                    Notification::query()->get()->each(function (Notification $notification) use ($appointmentIds) {
+                        if (strpos($notification->type, 'appointment_') === 0
+                            && in_array($notification->data['appointment_id'] ?? null, $appointmentIds, true)) {
+                            $notification->delete();
+                        }
+                    });
+                }
                 foreach (['notifications', 'audit_logs', 'appointment_checkins', 'appointments', 'health_profiles', 'qr_codes'] as $table) {
                     DB::table($table)->whereIn('user_id', $this->users)->delete();
                 }
@@ -124,7 +133,8 @@ class AppointmentIntegrationTest extends TestCase
         Mail::assertSent(StudentAppointmentStatusMail::class, 2); // pending + approved
         $this->eventMail($student, $appointment, 'pending');
         $this->eventMail($student, $appointment, 'approved');
-        $this->assertSame(0, Notification::where('user_id', $nurse->id)->count());
+        $this->assertSame(1, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_pending')->count());
 
         $this->actingAs($student->fresh(), 'api')->getJson('/api/student/upcoming-appointments')
             ->assertOk()->assertJsonPath('data.0.appointment_date', $date);
@@ -175,6 +185,10 @@ class AppointmentIntegrationTest extends TestCase
         $this->patchJson($base . '/reschedule', $schedule)->assertOk();
         $this->patchJson($base . '/reschedule', ['appointment_date' => '2026-09-27', 'time_slot' => '8:00 AM'])->assertUnprocessable();
         $this->patchJson($base . '/cancel', ['reason' => 'Clinic unavailable'])->assertOk();
+        $this->assertSame(1, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_cancelled')->count());
+        $this->assertSame(1, Notification::where('user_id', $student->id)
+            ->where('type', 'appointment_cancelled')->count());
         $this->patchJson($base . '/cancel', ['reason' => 'Repeated'])->assertUnprocessable();
         Mail::assertSent(StudentAppointmentStatusMail::class, 3);
         $this->eventMail($student, $appointment->fresh(), 'rescheduled');

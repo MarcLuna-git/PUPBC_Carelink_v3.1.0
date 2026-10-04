@@ -3,12 +3,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Calendar, Users, FileText, Bell, LogOut, QrCode, Settings, Menu, X, Stethoscope, Activity, Sun, Moon, Pill, Megaphone, BookOpen } from 'lucide-react';
+import LogoutConfirmation from '../components/LogoutConfirmation';
+import api from '../services/api';
 
 const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
 
   useEffect(() => {
@@ -32,6 +36,45 @@ const AdminLayout = ({ children }) => {
     };
     window.addEventListener('darkModeChange', handleDarkModeChange);
     return () => window.removeEventListener('darkModeChange', handleDarkModeChange);
+  }, []);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!localStorage.getItem('token')) {
+        setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const response = await api.get('/notifications', { params: { limit: 1 } });
+        setUnreadCount(Math.max(0, Number(response.data?.unread_count) || 0));
+      } catch (err) {
+        console.error('Nurse unread notification refresh failed:', err);
+      }
+    };
+
+    const handleNotificationUpdate = (event) => {
+      const nextCount = Number(event?.detail?.unreadCount);
+      if (Number.isFinite(nextCount)) setUnreadCount(Math.max(0, nextCount));
+      else fetchUnreadCount();
+    };
+    const handleFocus = () => fetchUnreadCount();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchUnreadCount();
+    };
+
+    fetchUnreadCount();
+    const interval = window.setInterval(fetchUnreadCount, 10000);
+    window.addEventListener('carelink:nurse-notifications-updated', handleNotificationUpdate);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('carelink:nurse-notifications-updated', handleNotificationUpdate);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const toggleDarkMode = () => {
@@ -126,7 +169,7 @@ const AdminLayout = ({ children }) => {
                 darkMode ? 'text-white/60' : 'text-white/80'
               }`}>{user.first_name} {user.last_name}</span>
             </div>
-            <button onClick={handleLogout}
+            <button onClick={() => setLogoutConfirmationOpen(true)}
               className={`flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-sm transition-all w-full ${
                 darkMode 
                   ? 'text-gray-400 hover:text-red-400 hover:bg-red-500/10' 
@@ -148,8 +191,17 @@ const AdminLayout = ({ children }) => {
           <span className="font-semibold text-gray-800 dark:text-white">Welcome, Nurse {user.first_name}</span>
 
           <div className="flex items-center space-x-1">
-            <Link to="/nurse/notifications" className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition relative">
+            <Link
+              to="/nurse/notifications"
+              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+              className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition relative"
+            >
               <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-gray-900">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
@@ -189,7 +241,7 @@ const AdminLayout = ({ children }) => {
           ))}
         </nav>
         <div className={`p-3 border-t ${darkMode ? 'border-white/5' : 'border-white/10'}`}>
-          <button onClick={handleLogout}
+          <button onClick={() => setLogoutConfirmationOpen(true)}
             className={`flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-sm w-full ${
               darkMode ? 'text-gray-400 hover:text-red-400' : 'text-white/60 hover:text-red-200'
             }`}>
@@ -198,6 +250,11 @@ const AdminLayout = ({ children }) => {
         </div>
       </aside>
 
+      <LogoutConfirmation
+        open={logoutConfirmationOpen}
+        onCancel={() => setLogoutConfirmationOpen(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };

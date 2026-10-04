@@ -19,6 +19,7 @@ use Tests\TestCase;
 class StudentAppointmentNotificationTest extends TestCase
 {
     private $studentIds = [];
+    private $nurseIds = [];
 
     protected function setUp(): void
     {
@@ -36,10 +37,20 @@ class StudentAppointmentNotificationTest extends TestCase
             }
             // Remove only fixtures created by this test, including committed ones.
             DB::transaction(function () {
-                foreach (['notifications', 'appointment_checkins', 'appointments', 'health_profiles'] as $table) {
+                $appointmentIds = Appointment::whereIn('user_id', $this->studentIds)->pluck('id')->all();
+                Notification::whereIn('user_id', array_merge($this->studentIds, $this->nurseIds))->delete();
+                if ($appointmentIds) {
+                    Notification::query()->get()->each(function (Notification $notification) use ($appointmentIds) {
+                        if (strpos($notification->type, 'appointment_') === 0
+                            && in_array($notification->data['appointment_id'] ?? null, $appointmentIds, true)) {
+                            $notification->delete();
+                        }
+                    });
+                }
+                foreach (['appointment_checkins', 'appointments', 'health_profiles'] as $table) {
                     DB::table($table)->whereIn('user_id', $this->studentIds)->delete();
                 }
-                DB::table('users')->whereIn('id', $this->studentIds)->delete();
+                DB::table('users')->whereIn('id', array_merge($this->studentIds, $this->nurseIds))->delete();
             });
         } finally {
             parent::tearDown();
@@ -64,6 +75,18 @@ class StudentAppointmentNotificationTest extends TestCase
             ]);
         }
         return $student;
+    }
+
+    private function nurse(?string $status = null): User
+    {
+        $nurse = User::create([
+            'student_id' => 'NURSE-' . Str::random(10),
+            'first_name' => 'Nurse', 'last_name' => 'Notification Test',
+            'email' => Str::uuid() . '@example.test', 'password' => 'unused',
+            'role' => 'nurse', 'status' => $status,
+        ]);
+        $this->nurseIds[] = $nurse->id;
+        return $nurse;
     }
 
     private function booking(): array
@@ -136,6 +159,33 @@ class StudentAppointmentNotificationTest extends TestCase
         $this->postJson('/api/student/appointments', $this->booking())->assertUnprocessable();
         $this->assertNotice($student, $appointment, 'pending');
         Mail::assertSent(StudentAppointmentStatusMail::class, 1);
+    }
+
+    public function test_booking_and_student_cancellation_notify_active_nurses_and_student_owner(): void
+    {
+        $student = $this->student();
+        $nurse = $this->nurse();
+        $inactiveNurse = $this->nurse('inactive');
+
+        $response = $this->actingAs($student, 'api')
+            ->postJson('/api/student/appointments', $this->booking())
+            ->assertCreated();
+        $appointment = Appointment::findOrFail($response->json('data.id'));
+
+        $this->assertNotice($student, $appointment, 'pending');
+        $this->assertSame(1, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_pending')->count());
+        $this->assertSame($appointment->id, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_pending')->first()->data['appointment_id']);
+        $this->assertSame(0, Notification::where('user_id', $inactiveNurse->id)->count());
+
+        $this->cancel($appointment)->assertOk();
+        $this->assertSame(1, Notification::where('user_id', $student->id)
+            ->where('type', 'appointment_cancelled')->count());
+        $this->assertSame(1, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_cancelled')->count());
+        $this->assertSame($appointment->id, Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_cancelled')->first()->data['appointment_id']);
     }
 
     public function test_pending_and_approved_cancellation_notify_once_and_keep_queue_rules(): void

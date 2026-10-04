@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Minus, Edit2, Trash2, Loader2, Pill, AlertTriangle, Clock, Package, Filter, ChevronDown, ClipboardList } from 'lucide-react';
+import { Search, X, Plus, Edit2, Trash2, Loader2, Pill, AlertTriangle, Clock, Package, Filter, ChevronDown, ClipboardList } from 'lucide-react';
+
 import api from '../../../services/api';
+
+const isPositiveInteger = (value) => /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
+const isIntegerInput = (value) => /^\d*$/.test(value);
+const todayInManila = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
 
 const NurseMedicine = () => {
   const [medicines, setMedicines] = useState([]);
@@ -11,40 +16,45 @@ const NurseMedicine = () => {
   const [filter, setFilter] = useState('all');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
+  const [formError, setFormError] = useState('');
+  const [batchError, setBatchError] = useState('');
+  const [movementError, setMovementError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   const [showModal, setShowModal] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState({
-    name: '', generic_name: '', category: '', quantity: 0,
+    name: '', generic_name: '', category: '', quantity: '1',
     minimum_stock: 10, unit: 'tablet', dosage: '', expiry_date: '', description: ''
   });
 
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockMedicine, setStockMedicine] = useState(null);
-  const [stockAction, setStockAction] = useState('add');
-  const [stockQuantity, setStockQuantity] = useState(1);
+  const [stockQuantity, setStockQuantity] = useState('1');
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteMedicine, setDeleteMedicine] = useState(null);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchMedicine, setBatchMedicine] = useState(null);
-  const [batchForm, setBatchForm] = useState({ lot_number: '', quantity: 1, expiry_date: '', received_at: '', supplier: '', reference: '' });
+  const [batchForm, setBatchForm] = useState({ lot_number: '', quantity: '1', expiry_date: '', received_at: '', supplier: '', reference: '' });
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [movementMedicine, setMovementMedicine] = useState(null);
-  const [movementForm, setMovementForm] = useState({ movement_type: 'dispensed', quantity: 1, batch_id: '', reason: '' });
+  const [movementForm, setMovementForm] = useState({ movement_type: 'dispensed', quantity: '1', batch_id: '', reason: '' });
 
   useEffect(() => {
     fetchMedicines();
   }, [filter]);
 
-  const fetchMedicines = async () => {
+  const fetchMedicines = async (searchTerm = search) => {
+    setError('');
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const params = { search };
+      const params = { search: searchTerm };
       if (filter === 'low_stock') params.low_stock = true;
       if (filter === 'expiring_soon') params.expiring_soon = true;
+      if (filter === 'expired') params.expired = true;
       
       const response = await api.get('/nurse/medicines', {
         headers: { Authorization: `Bearer ${token}` },
@@ -56,7 +66,7 @@ const NurseMedicine = () => {
         setMedicines(Array.isArray(data) ? data : (data?.data || []));
       }
     } catch (err) {
-      setError('Failed to load medicines.');
+      setError(err.response?.data?.message || 'Failed to load medicines.');
     } finally {
       setLoading(false);
     }
@@ -69,17 +79,18 @@ const NurseMedicine = () => {
 
   const openAddModal = () => {
     setEditingMedicine(null);
-    setForm({ name: '', generic_name: '', category: '', quantity: 0, minimum_stock: 10, unit: 'tablet', dosage: '', expiry_date: '', description: '' });
+    setFormError('');
+    setForm({ name: '', generic_name: '', category: '', quantity: '1', minimum_stock: 10, unit: 'tablet', dosage: '', expiry_date: '', description: '' });
     setShowModal(true);
   };
 
   const openEditModal = (medicine) => {
     setEditingMedicine(medicine);
+    setFormError('');
     setForm({
       name: medicine.name || '',
       generic_name: medicine.generic_name || '',
       category: medicine.category || '',
-      quantity: medicine.quantity || 0,
       minimum_stock: medicine.minimum_stock || 10,
       unit: medicine.unit || 'tablet',
       dosage: medicine.dosage || '',
@@ -91,18 +102,24 @@ const NurseMedicine = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setFormError('');
     setFormLoading(true);
     
     try {
       const token = localStorage.getItem('token');
       let response;
+      const payload = {
+        ...form,
+        minimum_stock: form.minimum_stock === '' ? null : Number(form.minimum_stock),
+      };
+      if (!editingMedicine) payload.quantity = Number(form.quantity);
       
       if (editingMedicine) {
-        response = await api.put(`/nurse/medicines/${editingMedicine.id}`, form, {
+        response = await api.put(`/nurse/medicines/${editingMedicine.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        response = await api.post('/nurse/medicines', form, {
+        response = await api.post('/nurse/medicines', payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -115,6 +132,8 @@ const NurseMedicine = () => {
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
+      const validationErrors = err.response?.data?.errors;
+      setFormError(validationErrors ? Object.values(validationErrors).flat().join(' ') : (err.response?.data?.message || 'Failed to save medicine.'));
       setMessageType('error');
       setMessage(err.response?.data?.message || 'Failed to save medicine.');
       setTimeout(() => setMessage(''), 4000);
@@ -123,24 +142,19 @@ const NurseMedicine = () => {
     }
   };
 
-  const openStockModal = (medicine, action) => {
+  const openStockModal = (medicine) => {
     setStockMedicine(medicine);
-    setStockAction(action);
-    setStockQuantity(1);
+    setStockQuantity('1');
     setShowStockModal(true);
   };
 
   const handleStockUpdate = async () => {
-    if (!stockMedicine) return;
+    if (!stockMedicine || !isPositiveInteger(stockQuantity)) return;
     setFormLoading(true);
     
     try {
       const token = localStorage.getItem('token');
-      const endpoint = stockAction === 'add' 
-        ? `/nurse/medicines/${stockMedicine.id}/add-stock`
-        : `/nurse/medicines/${stockMedicine.id}/reduce-stock`;
-      
-      const response = await api.post(endpoint, { quantity: stockQuantity }, {
+      const response = await api.post(`/nurse/medicines/${stockMedicine.id}/add-stock`, { quantity: Number(stockQuantity) }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -162,41 +176,51 @@ const NurseMedicine = () => {
 
   const openBatchModal = (medicine) => {
     setBatchMedicine(medicine);
-    setBatchForm({ lot_number: '', quantity: 1, expiry_date: '', received_at: '', supplier: '', reference: '' });
+    setBatchError('');
+    setBatchForm({ lot_number: '', quantity: '1', expiry_date: '', received_at: '', supplier: '', reference: '' });
     setShowBatchModal(true);
   };
 
   const handleBatchReceive = async () => {
-    if (!batchMedicine) return;
+    if (!batchMedicine || !isPositiveInteger(batchForm.quantity)) return;
+    setBatchError('');
     setFormLoading(true);
     try {
-      await api.post(`/nurse/medicines/${batchMedicine.id}/batches`, batchForm);
+      await api.post(`/nurse/medicines/${batchMedicine.id}/batches`, { ...batchForm, quantity: Number(batchForm.quantity) });
       setMessageType('success'); setMessage('Batch received successfully.'); setShowBatchModal(false); fetchMedicines();
     } catch (err) {
+      const validationErrors = err.response?.data?.errors;
+      setBatchError(validationErrors ? Object.values(validationErrors).flat().join(' ') : (err.response?.data?.message || 'Failed to receive batch.'));
       setMessageType('error'); setMessage(err.response?.data?.message || 'Failed to receive batch.');
     } finally { setFormLoading(false); setTimeout(() => setMessage(''), 4000); }
   };
 
   const openMovementModal = (medicine) => {
     setMovementMedicine(medicine);
-    setMovementForm({ movement_type: 'dispensed', quantity: 1, batch_id: '', reason: '' });
+    setMovementForm({ movement_type: 'dispensed', quantity: '1', batch_id: '', reason: '' });
+    setMovementError('');
     setShowMovementModal(true);
   };
 
   const handleMovement = async () => {
     if (!movementMedicine || !movementForm.reason.trim()) return;
+    if (!isPositiveInteger(movementForm.quantity)) {
+      setMovementError('Quantity must be a positive whole number.');
+      return;
+    }
     setFormLoading(true);
     try {
-      await api.post(`/nurse/medicines/${movementMedicine.id}/movements`, movementForm);
+      await api.post(`/nurse/medicines/${movementMedicine.id}/movements`, { ...movementForm, quantity: Number(movementForm.quantity) });
       setMessageType('success'); setMessage('Stock movement recorded.'); setShowMovementModal(false); fetchMedicines();
     } catch (err) {
-      setMessageType('error'); setMessage(err.response?.data?.message || 'Failed to record movement.');
+      setMovementError(err.response?.data?.message || 'Failed to record movement.');
     } finally { setFormLoading(false); setTimeout(() => setMessage(''), 4000); }
   };
 
   const handleDelete = async () => {
-    if (!deleteMedicine) return;
-    
+    if (!deleteMedicine || deleteLoading) return;
+    setDeleteLoading(true);
+
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/nurse/medicines/${deleteMedicine.id}`, {
@@ -211,8 +235,10 @@ const NurseMedicine = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setMessageType('error');
-      setMessage('Failed to delete medicine.');
+      setMessage(err.response?.data?.message || 'Failed to delete medicine.');
       setTimeout(() => setMessage(''), 4000);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -248,6 +274,8 @@ const NurseMedicine = () => {
         </button>
       </div>
 
+      {error && <div role="alert" className="p-3 rounded-2xl text-sm text-center bg-red-50 text-red-700">{error}</div>}
+
       {message && (
         <div className={`p-3 rounded-2xl text-sm text-center ${
           messageType === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
@@ -257,8 +285,9 @@ const NurseMedicine = () => {
       <div className="flex flex-col sm:flex-row gap-3">
         <form onSubmit={handleSearch} className="flex-1 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className="w-full border border-gray-200 dark:border-gray-600 rounded-2xl pl-10 pr-4 py-2.5 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-maroon-500"
+          <input className="w-full border border-gray-200 dark:border-gray-600 rounded-2xl pl-10 pr-10 py-2.5 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-maroon-500"
             value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search medicines..." />
+          {search && <button type="button" onClick={() => { setSearch(''); fetchMedicines(''); }} aria-label="Clear medicine search" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-white"><X className="w-4 h-4" /></button>}
         </form>
         <div className="relative">
           <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -327,13 +356,9 @@ const NurseMedicine = () => {
                 <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
                   <button onClick={() => openBatchModal(med)} title="Receive batch" className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><Package className="w-3.5 h-3.5" /></button>
                   <button onClick={() => openMovementModal(med)} title="Record stock movement" className="p-1.5 text-gray-400 hover:text-maroon-600 hover:bg-maroon-50 rounded-lg transition"><ClipboardList className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => openStockModal(med, 'add')}
+                  <button onClick={() => openStockModal(med)}
                     className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-semibold hover:bg-green-100 transition">
                     <Plus className="w-3 h-3" /><span>Add</span>
-                  </button>
-                  <button onClick={() => openStockModal(med, 'reduce')}
-                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded-lg text-xs font-semibold hover:bg-orange-100 transition">
-                    <Minus className="w-3 h-3" /><span>Use</span>
                   </button>
                   <button onClick={() => openEditModal(med)}
                     className="p-1.5 text-gray-400 hover:text-maroon-600 hover:bg-maroon-50 rounded-lg transition">
@@ -357,6 +382,7 @@ const NurseMedicine = () => {
               {editingMedicine ? 'Edit Medicine' : 'Add New Medicine'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
+              {formError && <p role="alert" className="text-sm text-red-600">{formError}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className={labelClass}>Medicine Name *</label>
@@ -383,11 +409,11 @@ const NurseMedicine = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Quantity *</label>
-                  <input className={inputClass} type="number" min="0" value={form.quantity} onChange={(e) => setForm({...form, quantity: parseInt(e.target.value) || 0})} required />
+                  <input className={inputClass} type="text" inputMode="numeric" pattern="[0-9]*" value={form.quantity} onChange={(e) => { if (isIntegerInput(e.target.value)) setForm({...form, quantity: e.target.value}); }} required />
                 </div>
                 <div>
                   <label className={labelClass}>Min Stock Alert</label>
-                  <input className={inputClass} type="number" min="0" value={form.minimum_stock} onChange={(e) => setForm({...form, minimum_stock: parseInt(e.target.value) || 0})} />
+                  <input className={inputClass} type="text" inputMode="numeric" pattern="[0-9]*" value={form.minimum_stock} onChange={(e) => { if (isIntegerInput(e.target.value)) setForm({...form, minimum_stock: e.target.value}); }} />
                 </div>
                 <div>
                   <label className={labelClass}>Dosage</label>
@@ -395,7 +421,7 @@ const NurseMedicine = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Expiry Date</label>
-                  <input className={inputClass} type="date" value={form.expiry_date} onChange={(e) => setForm({...form, expiry_date: e.target.value})} />
+                  <input className={inputClass} type="date" min={todayInManila()} value={form.expiry_date} onChange={(e) => setForm({...form, expiry_date: e.target.value})} />
                 </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
@@ -414,20 +440,20 @@ const NurseMedicine = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              {stockAction === 'add' ? 'Add Stock' : 'Use/Reduce Stock'}
+              Add Stock
             </h2>
             <p className="text-sm text-gray-500 mb-4">{stockMedicine.name} (Current: {stockMedicine.quantity} {stockMedicine.unit})</p>
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>Quantity</label>
-                <input className={inputClass} type="number" min="1" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 1)} />
+                <input className={inputClass} type="text" inputMode="numeric" pattern="[0-9]*" value={stockQuantity} onChange={(e) => { if (isIntegerInput(e.target.value)) setStockQuantity(e.target.value); }} required />
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowStockModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button>
-                <button onClick={handleStockUpdate} disabled={formLoading}
-                  className={`flex-1 py-3 text-white rounded-2xl font-semibold flex items-center justify-center disabled:opacity-50 ${stockAction === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-                  {formLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : stockAction === 'add' ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-                  <span className="ml-2">{stockAction === 'add' ? 'Add' : 'Remove'} {stockQuantity} {stockMedicine.unit}</span>
+                <button onClick={handleStockUpdate} disabled={formLoading || !isPositiveInteger(stockQuantity)}
+                  className="flex-1 py-3 text-white rounded-2xl font-semibold flex items-center justify-center disabled:opacity-50 bg-green-600 hover:bg-green-700">
+                  {formLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span className="ml-2">Add {stockQuantity} {stockMedicine.unit}</span>
                 </button>
               </div>
             </div>
@@ -440,15 +466,16 @@ const NurseMedicine = () => {
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Receive Medicine Batch</h2>
             <p className="text-sm text-gray-500 mb-4">{batchMedicine.name}</p>
+            {batchError && <p role="alert" className="mb-3 text-sm text-red-600">{batchError}</p>}
             <div className="grid grid-cols-2 gap-3">
-              <input className={`${inputClass} col-span-2`} placeholder="Lot/batch number *" value={batchForm.lot_number} onChange={e => setBatchForm({ ...batchForm, lot_number: e.target.value })} required />
-              <input className={inputClass} type="number" min="1" placeholder="Quantity" value={batchForm.quantity} onChange={e => setBatchForm({ ...batchForm, quantity: Number(e.target.value) || 1 })} required />
-              <input className={inputClass} type="date" value={batchForm.expiry_date} onChange={e => setBatchForm({ ...batchForm, expiry_date: e.target.value })} />
-              <input className={inputClass} type="date" value={batchForm.received_at} onChange={e => setBatchForm({ ...batchForm, received_at: e.target.value })} />
+              <label className="col-span-2"><span className={labelClass}>Lot/batch number *</span><input className={inputClass} value={batchForm.lot_number} onChange={e => setBatchForm({ ...batchForm, lot_number: e.target.value })} required /></label>
+              <label><span className={labelClass}>Quantity *</span><input className={inputClass} type="text" inputMode="numeric" pattern="[0-9]*" value={batchForm.quantity} onChange={e => { if (isIntegerInput(e.target.value)) setBatchForm({ ...batchForm, quantity: e.target.value }); }} required /></label>
+              <label><span className={labelClass}>Expiry date</span><input className={inputClass} type="date" min={todayInManila()} value={batchForm.expiry_date} onChange={e => setBatchForm({ ...batchForm, expiry_date: e.target.value })} /></label>
+              <label><span className={labelClass}>Received date</span><input className={inputClass} type="date" value={batchForm.received_at} onChange={e => setBatchForm({ ...batchForm, received_at: e.target.value })} /></label>
               <input className={inputClass} placeholder="Supplier (optional)" value={batchForm.supplier} onChange={e => setBatchForm({ ...batchForm, supplier: e.target.value })} />
               <input className={`${inputClass} col-span-2`} placeholder="Reference (optional)" value={batchForm.reference} onChange={e => setBatchForm({ ...batchForm, reference: e.target.value })} />
             </div>
-            <div className="flex gap-3 mt-5"><button onClick={() => setShowBatchModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleBatchReceive} disabled={formLoading || !batchForm.lot_number.trim()} className="flex-1 py-3 bg-green-600 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Receive Batch'}</button></div>
+            <div className="flex gap-3 mt-5"><button onClick={() => setShowBatchModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleBatchReceive} disabled={formLoading || !batchForm.lot_number.trim() || !isPositiveInteger(batchForm.quantity)} className="flex-1 py-3 bg-green-600 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Receive Batch'}</button></div>
           </div>
         </div>
       )}
@@ -460,10 +487,11 @@ const NurseMedicine = () => {
             <p className="text-sm text-gray-500 mb-4">{movementMedicine.name}</p>
             <div className="space-y-3">
               <select className={inputClass} value={movementForm.movement_type} onChange={e => setMovementForm({ ...movementForm, movement_type: e.target.value })}><option value="dispensed">Dispensed</option><option value="wasted">Wasted</option><option value="expired">Expired</option><option value="adjustment">Adjustment</option></select>
-              <input className={inputClass} type="number" min="1" value={movementForm.quantity} onChange={e => setMovementForm({ ...movementForm, quantity: Number(e.target.value) || 1 })} />
+              <input className={inputClass} type="text" inputMode="numeric" pattern="[0-9]*" value={movementForm.quantity} onChange={e => { if (isIntegerInput(e.target.value)) setMovementForm({ ...movementForm, quantity: e.target.value }); setMovementError(''); }} required />
               <textarea className={inputClass} rows={3} placeholder="Reason *" value={movementForm.reason} onChange={e => setMovementForm({ ...movementForm, reason: e.target.value })} required />
+              {movementError && <p role="alert" className="text-sm text-red-600">{movementError}</p>}
             </div>
-            <div className="flex gap-3 mt-5"><button onClick={() => setShowMovementModal(false)} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleMovement} disabled={formLoading || !movementForm.reason.trim()} className="flex-1 py-3 bg-maroon-800 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Record Movement'}</button></div>
+            <div className="flex gap-3 mt-5"><button onClick={() => setShowMovementModal(false)} disabled={formLoading} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button><button onClick={handleMovement} disabled={formLoading || !movementForm.reason.trim() || !isPositiveInteger(movementForm.quantity)} className="flex-1 py-3 bg-maroon-800 text-white rounded-2xl font-semibold disabled:opacity-50">{formLoading ? 'Saving...' : 'Record Movement'}</button></div>
           </div>
         </div>
       )}
@@ -475,8 +503,8 @@ const NurseMedicine = () => {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Medicine?</h2>
             <p className="text-sm text-gray-500 mb-4">Are you sure you want to delete <strong>{deleteMedicine.name}</strong>? This cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => { setShowDeleteConfirm(false); setDeleteMedicine(null); }} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-semibold">Delete</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteMedicine(null); }} disabled={deleteLoading} className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-2xl font-semibold disabled:opacity-50">Cancel</button>
+              <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-semibold flex items-center justify-center disabled:opacity-50">{deleteLoading ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Deleting...</> : 'Delete'}</button>
             </div>
           </div>
         </div>

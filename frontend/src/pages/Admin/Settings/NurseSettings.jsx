@@ -8,6 +8,7 @@ const NurseSettings = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [loading, setLoading] = useState(false);
+  const [profileErrors, setProfileErrors] = useState({});
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   
@@ -95,6 +96,20 @@ const NurseSettings = () => {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    const errors = {};
+    const validName = /^[\p{L}\s\-'.]+$/u;
+    for (const field of ['first_name', 'last_name']) {
+      if (!profile[field].trim()) errors[field] = `${field === 'first_name' ? 'First' : 'Last'} name is required.`;
+      else if (!validName.test(profile[field].trim())) errors[field] = 'Use letters, spaces, apostrophes, periods, or hyphens only.';
+    }
+    if (Object.keys(errors).length) {
+      setProfileErrors(errors);
+      setMessageType('error');
+      setMessage('Please correct the highlighted profile fields.');
+      return;
+    }
+
+    setProfileErrors({});
     setLoading(true);
     setMessage('');
     
@@ -111,7 +126,12 @@ const NurseSettings = () => {
       setMessage('Profile updated successfully!');
     } catch (err) {
       setMessageType('error');
-      setMessage(err.response?.data?.message || 'Failed to update profile.');
+      if (err.response?.status === 422) {
+        setProfileErrors(err.response.data?.errors || {});
+        setMessage('Please correct the highlighted profile fields.');
+      } else {
+        setMessage(err.response?.data?.message || 'Failed to update profile.');
+      }
     } finally {
       setLoading(false);
       setTimeout(() => setMessage(''), 4000);
@@ -163,9 +183,14 @@ const NurseSettings = () => {
                 className={inputClass}
                 type="text" 
                 value={profile.first_name} 
-                onChange={(e) => setProfile({...profile, first_name: e.target.value})} 
+                onChange={(e) => {
+                  setProfile({ ...profile, first_name: e.target.value.replace(/[^\p{L}\s\-'.]/gu, '') });
+                  setProfileErrors((current) => ({ ...current, first_name: undefined }));
+                }}
                 placeholder="First Name" 
+                aria-invalid={Boolean(profileErrors.first_name)}
               />
+              {profileErrors.first_name && <p role="alert" className="mt-1 text-xs text-red-600">{Array.isArray(profileErrors.first_name) ? profileErrors.first_name[0] : profileErrors.first_name}</p>}
             </div>
             <div>
               <label className={labelClass}>Last Name</label>
@@ -173,9 +198,14 @@ const NurseSettings = () => {
                 className={inputClass}
                 type="text" 
                 value={profile.last_name} 
-                onChange={(e) => setProfile({...profile, last_name: e.target.value})} 
+                onChange={(e) => {
+                  setProfile({ ...profile, last_name: e.target.value.replace(/[^\p{L}\s\-'.]/gu, '') });
+                  setProfileErrors((current) => ({ ...current, last_name: undefined }));
+                }}
                 placeholder="Last Name" 
+                aria-invalid={Boolean(profileErrors.last_name)}
               />
+              {profileErrors.last_name && <p role="alert" className="mt-1 text-xs text-red-600">{Array.isArray(profileErrors.last_name) ? profileErrors.last_name[0] : profileErrors.last_name}</p>}
             </div>
           </div>
           <div>

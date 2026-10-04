@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Eye, EyeOff, Loader2, Lock, Mail, Stethoscope, 
   Heart, CalendarCheck, QrCode, ShieldCheck, ClipboardList,
@@ -255,7 +255,7 @@ const NurseLogin = () => {
                     onKeyUp={handleKeyDown}
                     placeholder="Enter your password"
                     autoComplete="current-password"
-                    className="w-full h-12 border border-gray-200 rounded-2xl pl-12 pr-12 text-sm bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-500 outline-none transition-all duration-200 placeholder:text-gray-400"
+                    className="w-full h-12 border border-gray-200 rounded-2xl pl-12 pr-12 text-sm bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-maroon-500/20 focus:border-maroon-500 outline-none transition-all duration-200 placeholder:text-gray-400 password-input"
                   />
                   <button
                     type="button"
@@ -293,12 +293,12 @@ const NurseLogin = () => {
                   />
                   <span className="text-sm text-gray-600">Remember me</span>
                 </label>
-                <button
-                  type="button"
+                <Link
+                  to="/nurse/forgot-password"
                   className="text-sm font-medium text-maroon-700 hover:text-maroon-900 transition-colors"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
 
               <motion.button

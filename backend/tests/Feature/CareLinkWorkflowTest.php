@@ -297,6 +297,8 @@ class CareLinkWorkflowTest extends TestCase
         $this->assertSame('archived', $student->fresh()->status);
         $this->assertSame('cancelled', $appointment->fresh()->status);
         $this->assertDatabaseHas('notifications', ['user_id' => $student->id, 'type' => 'student_archived']);
+        $this->assertSame(1, \App\Models\Notification::where('user_id', $nurse->id)
+            ->where('type', 'appointment_cancelled')->count());
 
         $this->actingAs($nurse, 'api')->patchJson('/api/nurse/students/'.$student->id.'/restore')->assertOk();
         $this->assertDatabaseHas('users', ['id' => $student->id, 'status' => null, 'deleted_at' => null]);
@@ -368,6 +370,134 @@ class CareLinkWorkflowTest extends TestCase
         $this->assertSame(4, $medicine->fresh()->quantity);
         $this->assertSame(4, MedicineBatch::findOrFail($batch['id'])->quantity);
         $this->assertSame(2, MedicineStockMovement::where('medicine_id', $medicine->id)->count());
+        $this->assertDatabaseHas('medicine_stock_movements', [
+            'medicine_id' => $medicine->id,
+            'movement_type' => 'dispensed',
+            'quantity' => 6,
+            'reason' => 'Dispensed for clinic visit',
+            'performed_by' => $nurse->id,
+        ]);
         $this->assertDatabaseHas('notifications', ['user_id' => $nurse->id, 'type' => 'medicine_low_stock']);
+    }
+
+    public function test_medicine_api_rejects_duplicate_names_invalid_quantities_and_past_expiry()
+    {
+        $nurse = $this->person('nurse');
+        $medicine = Medicine::create(['name' => 'Aspirin', 'quantity' => 4, 'added_by' => $nurse->id]);
+        $this->actingAs($nurse, 'api');
+
+        $this->postJson('/api/nurse/medicines', ['name' => ' aspirin ', 'quantity' => 2])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->postJson('/api/nurse/medicines', ['name' => 'New medicine', 'quantity' => 0])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/nurse/medicines', ['name' => 'Another medicine', 'quantity' => 1.5])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/nurse/medicines', [
+            'name' => 'Expired medicine', 'quantity' => 1, 'expiry_date' => today()->subDay()->toDateString(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('expiry_date');
+        $this->putJson('/api/nurse/medicines/'.$medicine->id, ['quantity' => 99])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->assertSame(4, $medicine->fresh()->quantity);
+        $this->putJson('/api/nurse/medicines/'.$medicine->id, ['expiry_date' => today()->subDay()->toDateString()])
+            ->assertUnprocessable()->assertJsonValidationErrors('expiry_date');
+    }
+
+    public function test_batch_stock_and_movement_quantities_must_be_positive_integers_and_expiry_must_not_be_past()
+    {
+        $nurse = $this->person('nurse');
+        $medicine = Medicine::create(['name' => 'Inventory validation', 'quantity' => 3, 'added_by' => $nurse->id]);
+        $this->actingAs($nurse, 'api');
+        $batchUrl = '/api/nurse/medicines/'.$medicine->id.'/batches';
+
+        $this->postJson($batchUrl, ['lot_number' => 'ZERO', 'quantity' => 0])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson($batchUrl, ['lot_number' => 'DECIMAL', 'quantity' => 1.5])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson($batchUrl, [
+            'lot_number' => 'PAST', 'quantity' => 1, 'expiry_date' => today()->subDay()->toDateString(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('expiry_date');
+        $this->postJson('/api/nurse/medicines/'.$medicine->id.'/add-stock', ['quantity' => 0])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/nurse/medicines/'.$medicine->id.'/add-stock', ['quantity' => 1.5])
+            ->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/nurse/medicines/'.$medicine->id.'/movements', [
+            'movement_type' => 'dispensed', 'quantity' => 0, 'reason' => 'Invalid zero quantity',
+        ])->assertUnprocessable()->assertJsonValidationErrors('quantity');
+        $this->postJson('/api/nurse/medicines/'.$medicine->id.'/movements', [
+            'movement_type' => 'dispensed', 'quantity' => 1.5, 'reason' => 'Invalid fractional quantity',
+        ])->assertUnprocessable()->assertJsonValidationErrors('quantity');
+
+        $expiredMedicine = Medicine::create(['name' => 'Expired stock', 'quantity' => 2, 'added_by' => $nurse->id]);
+        $expiredBatch = MedicineBatch::create([
+            'medicine_id' => $expiredMedicine->id, 'lot_number' => 'OLD', 'quantity' => 2,
+            'expiry_date' => today()->subDay()->toDateString(),
+        ]);
+        $this->postJson('/api/nurse/medicines/'.$expiredMedicine->id.'/movements', [
+            'movement_type' => 'dispensed', 'quantity' => 1, 'batch_id' => $expiredBatch->id,
+            'reason' => 'Attempted expired dispense',
+        ])->assertUnprocessable()->assertJsonPath('message', 'Cannot dispense expired medicine.');
+        $this->assertSame(2, $expiredMedicine->fresh()->quantity);
+        $this->assertSame(2, $expiredBatch->fresh()->quantity);
+    }
+
+    public function test_expired_medicine_filter_returns_only_past_expiry_dates()
+    {
+        $nurse = $this->person('nurse');
+        Medicine::create(['name' => 'Past expiry', 'quantity' => 1, 'expiry_date' => today()->subDay()]);
+        Medicine::create(['name' => 'Expires today', 'quantity' => 1, 'expiry_date' => today()]);
+        Medicine::create(['name' => 'Future expiry', 'quantity' => 1, 'expiry_date' => today()->addDay()]);
+
+        $this->actingAs($nurse, 'api')->getJson('/api/nurse/medicines?expired=1')
+            ->assertOk()->assertJsonPath('data.total', 1)->assertJsonPath('data.data.0.name', 'Past expiry');
+    }
+
+    public function test_dispensing_to_zero_records_reason_and_creates_distinct_out_of_stock_notification()
+    {
+        $nurse = $this->person('nurse');
+        $medicine = Medicine::create(['name' => 'Last tablet', 'quantity' => 1, 'minimum_stock' => 1, 'added_by' => $nurse->id]);
+
+        $this->actingAs($nurse, 'api')->postJson('/api/nurse/medicines/'.$medicine->id.'/movements', [
+            'movement_type' => 'dispensed', 'quantity' => 1, 'reason' => 'Dispensed during clinic visit',
+        ])->assertOk();
+
+        $this->assertSame(0, $medicine->fresh()->quantity);
+        $this->assertDatabaseHas('medicine_stock_movements', [
+            'medicine_id' => $medicine->id,
+            'movement_type' => 'dispensed',
+            'quantity' => 1,
+            'reason' => 'Dispensed during clinic visit',
+            'performed_by' => $nurse->id,
+        ]);
+        $this->assertDatabaseHas('notifications', ['user_id' => $nurse->id, 'type' => 'medicine_out_of_stock']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $nurse->id, 'type' => 'medicine_low_stock']);
+    }
+
+    public function test_expiring_medicine_notifications_use_three_month_threshold_and_are_not_duplicated()
+    {
+        \Carbon\Carbon::setTestNow('2026-10-04 12:00:00');
+        try {
+            $nurse = $this->person('nurse');
+            $medicine = Medicine::create([
+                'name' => 'Expiring medicine', 'quantity' => 5,
+                'expiry_date' => today()->addMonths(3)->toDateString(), 'added_by' => $nurse->id,
+            ]);
+            $batchedMedicine = Medicine::create(['name' => 'Batch medicine', 'quantity' => 5, 'added_by' => $nurse->id]);
+            MedicineBatch::create([
+                'medicine_id' => $batchedMedicine->id, 'lot_number' => 'SOON', 'quantity' => 5,
+                'expiry_date' => today()->addMonth()->toDateString(),
+            ]);
+            Medicine::create([
+                'name' => 'Outside threshold', 'quantity' => 5,
+                'expiry_date' => today()->addMonths(3)->addDay()->toDateString(), 'added_by' => $nurse->id,
+            ]);
+
+            $this->artisan('medicines:notify-expiring')->assertExitCode(0);
+            $this->artisan('medicines:notify-expiring')->assertExitCode(0);
+
+            $this->assertSame(2, \App\Models\Notification::where('user_id', $nurse->id)
+                ->where('type', 'medicine_expiring_soon')->count());
+        } finally {
+            \Carbon\Carbon::setTestNow();
+        }
     }
 }

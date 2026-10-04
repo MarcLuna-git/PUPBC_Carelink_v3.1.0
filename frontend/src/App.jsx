@@ -491,6 +491,16 @@ function App() {
             element={<ResetPassword />}
           />
 
+          <Route
+            path="/nurse/forgot-password"
+            element={<ForgotPassword />}
+          />
+
+          <Route
+            path="/nurse/reset-password"
+            element={<ResetPassword />}
+          />
+
           {/* ==================================================
               KIOSK
           ================================================== */}

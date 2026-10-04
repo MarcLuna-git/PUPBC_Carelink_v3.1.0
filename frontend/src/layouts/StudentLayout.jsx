@@ -32,6 +32,7 @@ import {
 import authService from '../services/authService';
 import api from '../services/api';
 import clinicLogo from '../assets/clinic logo.jpg';
+import LogoutConfirmation from '../components/LogoutConfirmation';
 
 const getStoredUser = () => {
   try {
@@ -97,6 +98,10 @@ const StudentLayout = ({ children }) => {
   const [
     profileMenuOpen,
     setProfileMenuOpen,
+  ] = useState(false);
+  const [
+    logoutConfirmationOpen,
+    setLogoutConfirmationOpen,
   ] = useState(false);
 
   const [greeting, setGreeting] =
@@ -440,6 +445,7 @@ const StudentLayout = ({ children }) => {
 
   const handleLogout = async () => {
     setProfileMenuOpen(false);
+    setLogoutConfirmationOpen(false);
 
     await authService.logout();
 
@@ -932,8 +938,8 @@ const StudentLayout = ({ children }) => {
 
                         <button
                           type="button"
-                          onClick={
-                            handleLogout
+                          onClick={() =>
+                            setLogoutConfirmationOpen(true)
                           }
                           role="menuitem"
                           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
@@ -1037,6 +1043,12 @@ const StudentLayout = ({ children }) => {
           )}
         </div>
       </nav>
+
+      <LogoutConfirmation
+        open={logoutConfirmationOpen}
+        onCancel={() => setLogoutConfirmationOpen(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };

@@ -30,14 +30,13 @@ class AnnouncementController extends Controller
             'title' => 'required|string|max:255',
             'content' => 'required|string',
             'category' => 'nullable|string|max:50',
-            'target_audience' => 'nullable|in:all,students,nurses',
         ]);
 
         $announcement = new Announcement();
         $announcement->title = $request->title;
         $announcement->content = $request->content;
         $announcement->category = $request->category;
-        $announcement->target_audience = $request->target_audience ?? 'all';
+        $announcement->target_audience = 'students';
         $announcement->created_by = Auth::id();
         $announcement->published_at = now();
         $announcement->save();
@@ -58,7 +57,14 @@ class AnnouncementController extends Controller
     public function update(Request $request, $id)
     {
         $announcement = Announcement::findOrFail($id);
-        $announcement->update($request->validate(['title' => 'sometimes|required|string|max:255', 'content' => 'sometimes|required|string', 'category' => 'nullable|string|max:50', 'target_audience' => 'sometimes|in:all,students,nurses', 'is_published' => 'sometimes|boolean']));
+        $announcement->update($request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'content' => 'sometimes|required|string',
+            'category' => 'nullable|string|max:50',
+            'is_published' => 'sometimes|boolean',
+        ]));
+        $announcement->target_audience = 'students';
+        $announcement->save();
         return response()->json(['success' => true, 'data' => $announcement, 'message' => 'Announcement updated']);
     }
 

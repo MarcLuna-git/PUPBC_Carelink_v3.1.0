@@ -103,6 +103,12 @@ class StudentController extends Controller
                     'message' => 'Your appointment was cancelled because your student account was archived: ' . $data['reason'],
                     'data' => ['appointment_id' => $appointment->id],
                 ]);
+                app(\App\Services\AppointmentEventNotification::class)->notifyActiveNurses(
+                    $appointment,
+                    'appointment_cancelled',
+                    'Appointment Cancelled',
+                    'A pending appointment was cancelled because the student account was archived.'
+                );
                 app(\App\Services\StudentAppointmentMail::class)->afterCommit($appointment);
             }
 

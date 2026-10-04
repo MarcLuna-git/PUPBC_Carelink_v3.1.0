@@ -123,13 +123,19 @@ class AuthController extends Controller
                         'required',
                         'string',
                         'min:8',
+                        'not_regex:/^\s*$/u',
                         'confirmed',
+                    ],
+                    'password_confirmation' => [
+                        'required',
+                        'string',
+                        'not_regex:/^\s*$/u',
                     ],
 
                     'birthday' => [
                         'required',
                         'date_format:Y-m-d',
-                        'before_or_equal:today',
+                        'before_or_equal:' . now('Asia/Manila')->subYears(17)->toDateString(),
                     ],
 
                     'gender' => [
@@ -213,6 +219,15 @@ class AuthController extends Controller
                     'password.min' =>
                         'Password must be at least 8 characters.',
 
+                    'password.not_regex' =>
+                        'Password cannot consist only of whitespace.',
+
+                    'password_confirmation.required' =>
+                        'Confirm password is required.',
+
+                    'password_confirmation.not_regex' =>
+                        'Confirm password cannot consist only of whitespace.',
+
                     'password.confirmed' =>
                         'Password confirmation does not match.',
 
@@ -223,7 +238,7 @@ class AuthController extends Controller
                         'Birthday format is invalid.',
 
                     'birthday.before_or_equal' =>
-                        'Birthday cannot be in the future.',
+                        'You must be at least 17 years old.',
 
                     'gender.required' =>
                         'Gender is required.',
@@ -447,12 +462,14 @@ public function login(Request $request): JsonResponse
             'birthday' => [
                 'required',
                 'date_format:Y-m-d',
-                'before_or_equal:today',
+                'before_or_equal:' . now('Asia/Manila')->subYears(17)->toDateString(),
             ],
             'password' => [
                 'required',
                 'string',
             ],
+        ], [
+            'birthday.before_or_equal' => 'You must be at least 17 years old.',
         ]);
 
         // Keep the existing authentication service.
@@ -591,6 +608,19 @@ public function login(Request $request): JsonResponse
     public function forgotPassword(
         Request $request
     ): JsonResponse {
+        return $this->handleForgotPassword($request, 'student');
+    }
+
+    public function nurseForgotPassword(
+        Request $request
+    ): JsonResponse {
+        return $this->handleForgotPassword($request, 'nurse');
+    }
+
+    private function handleForgotPassword(
+        Request $request,
+        string $role
+    ): JsonResponse {
         try {
             $this->normalizeEmailInput($request);
 
@@ -612,7 +642,7 @@ public function login(Request $request): JsonResponse
             );
 
             $result = $this->authService
-                ->forgotPassword($data);
+                ->forgotPassword($data, $role);
 
             return response()->json([
                 'success' => true,
@@ -637,6 +667,19 @@ public function login(Request $request): JsonResponse
     public function resetPassword(
         Request $request
     ): JsonResponse {
+        return $this->handleResetPassword($request, 'student');
+    }
+
+    public function nurseResetPassword(
+        Request $request
+    ): JsonResponse {
+        return $this->handleResetPassword($request, 'nurse');
+    }
+
+    private function handleResetPassword(
+        Request $request,
+        string $role
+    ): JsonResponse {
         try {
             $this->normalizeEmailInput($request);
 
@@ -659,7 +702,14 @@ public function login(Request $request): JsonResponse
                         'required',
                         'string',
                         'min:8',
+                        'not_regex:/^\s*$/u',
                         'confirmed',
+                    ],
+
+                    'password_confirmation' => [
+                        'required',
+                        'string',
+                        'not_regex:/^\s*$/u',
                     ],
                 ],
                 [
@@ -684,13 +734,22 @@ public function login(Request $request): JsonResponse
                     'password.min' =>
                         'Password must be at least 8 characters.',
 
+                    'password.not_regex' =>
+                        'Password cannot consist only of whitespace.',
+
+                    'password_confirmation.required' =>
+                        'Confirm password is required.',
+
+                    'password_confirmation.not_regex' =>
+                        'Confirm password cannot consist only of whitespace.',
+
                     'password.confirmed' =>
                         'Password confirmation does not match.',
                 ]
             );
 
             $result = $this->authService
-                ->resetPassword($data);
+                ->resetPassword($data, $role);
 
             return response()->json([
                 'success' => true,
@@ -704,6 +763,59 @@ public function login(Request $request): JsonResponse
                 'errors' => $e->errors(),
             ], 422);
 
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function verifyPasswordResetOtp(
+        Request $request
+    ): JsonResponse {
+        return $this->handleVerifyPasswordResetOtp($request, 'student');
+    }
+
+    public function nurseVerifyPasswordResetOtp(
+        Request $request
+    ): JsonResponse {
+        return $this->handleVerifyPasswordResetOtp($request, 'nurse');
+    }
+
+    private function handleVerifyPasswordResetOtp(
+        Request $request,
+        string $role
+    ): JsonResponse {
+        try {
+            $this->normalizeEmailInput($request);
+
+            $data = $request->validate(
+                [
+                    'email' => ['required', 'email', 'max:255'],
+                    'otp' => ['required', 'string', 'size:6', 'regex:/^\d{6}$/'],
+                ],
+                [
+                    'email.required' => 'Email address is required.',
+                    'email.email' => 'Please enter a valid email address.',
+                    'otp.required' => 'Verification code is required.',
+                    'otp.size' => 'Verification code must contain 6 digits.',
+                    'otp.regex' => 'Verification code must contain numbers only.',
+                ]
+            );
+
+            $result = $this->authService->verifyPasswordResetOtp($data, $role);
+
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'],
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,

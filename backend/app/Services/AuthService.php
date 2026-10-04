@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -65,18 +66,20 @@ class AuthService
             })
             ->delete();
 
+        $conflicts = [];
+        if (User::where('email', $data['email'])->exists()) {
+            $conflicts['email'] = ['This email is already registered.'];
+        }
         if (
-            User::where('email', $data['email'])
-                ->orWhere('student_id', $data['student_id'])
-                ->exists()
-            ||
+            User::where('student_id', $data['student_id'])->exists() ||
             PendingRegistration::where('email', '!=', $data['email'])
                 ->where('student_id', $data['student_id'])
                 ->exists()
         ) {
-            throw new \Exception(
-                'This email or Student ID is already registered.'
-            );
+            $conflicts['student_id'] = ['This Student ID is already registered.'];
+        }
+        if ($conflicts) {
+            throw ValidationException::withMessages($conflicts);
         }
 
         if (PendingRegistration::where('email', $data['email'])->exists()) {
@@ -219,17 +222,15 @@ class AuthService
                 );
             }
 
-            if (
-                User::where('email', $email)
-                    ->orWhere(
-                        'student_id',
-                        $pending->student_id
-                    )
-                    ->exists()
-            ) {
-                throw new \Exception(
-                    'This email or Student ID is already registered.'
-                );
+            $conflicts = [];
+            if (User::where('email', $email)->exists()) {
+                $conflicts['email'] = ['This email is already registered.'];
+            }
+            if (User::where('student_id', $pending->student_id)->exists()) {
+                $conflicts['student_id'] = ['This Student ID is already registered.'];
+            }
+            if ($conflicts) {
+                throw ValidationException::withMessages($conflicts);
             }
 
             $user = $this->register(
@@ -344,12 +345,11 @@ class AuthService
     }
 
     // Sa resend, i-invalidate muna ang dating unused OTP.
-    public function forgotPassword(array $data): array
+    public function forgotPassword(array $data, string $role = 'student'): array
     {
-        $user = $this->userRepository
-            ->findByEmail(
-                $data['email']
-            );
+        $user = User::where('email', $data['email'])
+            ->where('role', $role)
+            ->first();
 
         if (!$user) {
             throw new \Exception(
@@ -412,13 +412,45 @@ class AuthService
         ];
     }
 
-    public function resetPassword(array $data): array
+    public function verifyPasswordResetOtp(array $data, string $role = 'student'): array
     {
-        return DB::transaction(function () use ($data) {
-            $user = $this->userRepository
-                ->findByEmail(
-                    $data['email']
-                );
+        return DB::transaction(function () use ($data, $role) {
+            $user = User::where('email', $data['email'])
+                ->where('role', $role)
+                ->first();
+
+            if (!$user) {
+                throw new \Exception('Email not found.');
+            }
+
+            $reset = PasswordReset::where('user_id', $user->id)
+                ->where('is_used', false)
+                ->latest('created_at')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$reset) {
+                throw new \Exception('No active password reset request found.');
+            }
+
+            if (!$reset->expires_at || now()->greaterThanOrEqualTo(Carbon::parse($reset->expires_at))) {
+                throw new \Exception('Password reset code has expired. Please request a new OTP.');
+            }
+
+            if (!Hash::check($data['otp'], $reset->otp_hash)) {
+                throw new \Exception('Invalid password reset code.');
+            }
+
+            return ['message' => 'OTP verified. You may now choose a new password.'];
+        });
+    }
+
+    public function resetPassword(array $data, string $role = 'student'): array
+    {
+        return DB::transaction(function () use ($data, $role) {
+            $user = User::where('email', $data['email'])
+                ->where('role', $role)
+                ->first();
 
             if (!$user) {
                 throw new \Exception(

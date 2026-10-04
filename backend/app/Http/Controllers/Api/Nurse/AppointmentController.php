@@ -66,7 +66,7 @@ class AppointmentController extends Controller
                 'cancelled_at' => now(),
             ]);
 
-            app(AppointmentEventNotification::class)->send($appointment);
+            app(AppointmentEventNotification::class)->send($appointment, null, true);
 
             AuditLog::create([
                 'user_id' => auth()->id(),
